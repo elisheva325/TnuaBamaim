@@ -1,0 +1,545 @@
+
+
+
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>רישום לקורס שחייה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>רישום לקורס שחייה</h2>
+        <!-- הודעה אם הרישום סגור -->
+        {% if not registration_active %}
+        <div style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; border: 2px solid #f5c6cb;">
+            <h3>🛑 הרישום לקורסים סגור כרגע</h3>
+            <p>נשמח לראותך בפעם הבאה שהרישום יפתח!</p>
+        </div>
+        {% endif %}
+        
+        <!-- חלונית תשלום -->
+        <div id="paymentModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <span id="closeModal" class="close" style="cursor:pointer;">&times;</span>
+                <h3>בחר סוג תשלום:</h3>
+                <label>
+                    <input type="radio" name="payment_type" value="private"> תשלום פרטי
+                </label><br>
+                <label>
+                    <input type="radio" name="payment_type" value="insurance"> תשלום דרך קופת חולים
+                </label>
+                
+                <div id="insuranceOptions" class="insurance-options" style="display:none; margin-top:10px;">
+                    <label>
+                        <input type="radio" name="insurance_type" value="מאוחדת"> מאוחדת
+                        <div class="insurance-code">קוד התחייבות: b99542</div>
+                    </label><br>
+                    <label>
+                        <input type="radio" name="insurance_type" value="לאומית"> לאומית
+                        <div class="insurance-code">קוד התחייבות: 93015</div>
+                    </label>
+                    <label for="insurance_email" style="margin-top:10px;">
+                        יש לשלם דמי רישום על סך 100 ש"ח ובנוסף לשלוח התחייבויות למייל: tnuakurs@gmail.com , במידה ולא ישלחו כל ההתחייבויות ייגבה תשלום נוסף
+                    </label>
+                </div>
+                
+                <button id="payButton" class="btn-pay" style="margin-top:10px;">שלם</button>
+            </div>
+        </div>
+        {% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for msg in messages %}
+  <div class="message" style="color: {% if category == 'error' %}red{% else %}green{% endif %}; margin-bottom: 10px;">
+    {{ msg }}
+  </div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+        <!-- {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for msg in messages %}
+                    <div class="message" style="color: {% if category == 'error' %}red{% else %}green{% endif %}; margin-bottom: 10px;">
+                        {{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %} -->
+
+        <form method="POST">
+            <h4>יש לכתוב את כל הפרטים בעברית</h4>
+             <!-- הפיכת כל השדות ללא פעילים אם הרישום סגור -->
+            <fieldset {% if not registration_active %}disabled{% endif %}>
+            
+            <label for="parent_name">שם ההורה:</label>
+            <input type="text" name="parent_name" id="parent_name" required maxlength="50" pattern="[א-ת\s]+">
+            
+            <label for="parent_surname">שם משפחה:</label>
+            <input type="text" name="parent_surname" id="parent_surname" required maxlength="50" pattern="[א-ת\s]+">
+            
+            <label for="email">אימייל:</label>
+            <input type="email" name="email" id="email" required maxlength="50">
+            <div id="email_error" style="color:red; font-size:0.9em;"></div>
+            
+            <label for="phone">טלפון:</label>
+            <input type="tel" name="phone" id="phone" required>
+            <div id="phone_error" style="color:red; font-size:0.9em; margin-bottom:5px;"></div>
+            
+            <label for="child_name">שם הילד/ה:</label>
+            <input type="text" name="child_name" id="child_name" required maxlength="50" pattern="[א-ת\s]+">
+            
+            <label for="child_age"> גיל הילד/ה: (6-13)</label>
+            <input type="number" name="child_age" id="child_age" min="6" max="13" required>
+            
+            <label for="child_gender">בן/בת:</label>
+            <select name="child_gender" id="child_gender" required>
+                <option value="" disabled selected>בחר/י</option>
+                <option value="boys">בן</option>
+                <option value="girls">בת</option>
+            </select>
+            
+            <label for="course">בחירת קורס:</label>
+            <select name="course" id="course" required>
+                <option value="" disabled selected>בחר/י קורס</option>
+            </select>
+            
+            <label for="group_type">סוג קבוצה:</label>
+            <select name="group_type" id="group_type" required>
+                <option value="" disabled selected>בחר/י סוג קבוצה</option>
+            </select>
+          
+<!-- <div class="mb-3" style="margin-top: 15px;">
+    <input type="checkbox" id="privacy" name="privacy" value="accepted" style="margin-right:8px;">
+    <label for="privacy" style="display:inline;">
+        אני מאשר/ת את <a href="/privacy-policy" target="_blank">מדיניות הפרטיות</a> של האתר
+    </label>
+</div> -->
+<div class="mb-3 privacy-container">
+    <input type="checkbox" id="privacy" name="privacy" value="accepted">
+    <label for="privacy">
+        אני מאשר/ת את עיבוד הנתונים שלי בהתאם
+        <a href="{{ url_for('privacy_policy') }}" >למדיניות הפרטיות</a>
+    </label>
+</div>
+            
+            <!-- <button type="submit" class="btn-register">הרשמה</button> -->
+             <button type="submit" class="btn-register" {% if not registration_active %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+                {% if not registration_active %}הרישום סגור{% else %}הרשמה{% endif %}
+            </button>
+            </fieldset>
+        </form>
+    </div>
+
+    <script>
+        const allCourses = {{ courses | tojson | safe }};
+        const courseStatus = {{ course_status | tojson | safe }};
+        const prices = {{ prices | tojson | safe }};
+        
+        const genderSelect = document.getElementById("child_gender");
+        const courseSelect = document.getElementById("course");
+        const submitButton = document.querySelector("button[type='submit']");
+        const ageInput = document.getElementById("child_age");
+        const groupSelect = document.getElementById("group_type");
+        const emailInput = document.getElementById("email");
+        const emailErrorDiv = document.getElementById("email_error");
+        const phoneInput = document.getElementById("phone");
+        const phoneErrorDiv = document.getElementById("phone_error");
+        const form = document.querySelector("form");
+
+        // פונקציות בדיקה
+        function validateEmailClient(email) {
+            const regex = /^[\w\.-]+@[\w\.-]+\.[a-zA-Z]{2,}$/;
+            return regex.test(email);
+        }
+
+        function validatePhoneClient(phone) {
+            const regex = /^(?:\+972|0)(?:5\d\d{7}|[23489]\d{7})$/;
+            return regex.test(phone);
+        }
+
+        function validateHebrewName(name) {
+            const regex = /^[א-ת\s]+$/;
+            return regex.test(name.trim());
+        }
+
+        // פונקציה מרכזית לבדיקת כל השדות
+        function validateAllFields() {
+            let isValid = true;
+            let errors = [];
+
+            // בדיקת שם ההורה
+            const parentName = document.getElementById("parent_name").value.trim();
+            if (!parentName) {
+                errors.push("שדה 'שם ההורה' הוא חובה");
+                isValid = false;
+            } else if (!validateHebrewName(parentName)) {
+                errors.push("שם ההורה אינו חוקי. יש להשתמש רק באותיות בעברית");
+                isValid = false;
+            }
+
+            // בדיקת שם משפחה
+            const parentSurname = document.getElementById("parent_surname").value.trim();
+            if (!parentSurname) {
+                errors.push("שדה 'שם משפחה' הוא חובה");
+                isValid = false;
+            } else if (!validateHebrewName(parentSurname)) {
+                errors.push("שם המשפחה אינו חוקי. יש להשתמש רק באותיות בעברית");
+                isValid = false;
+            }
+
+            // בדיקת אימייל
+            const email = emailInput.value.trim();
+            if (!email) {
+                errors.push("שדה 'אימייל' הוא חובה");
+                isValid = false;
+            } else if (!validateEmailClient(email)) {
+                errors.push("כתובת אימייל לא חוקית. יש להכניס כתובת תקינה עם סיומת");
+                emailErrorDiv.textContent = "כתובת אימייל לא חוקית";
+                isValid = false;
+            } else {
+                emailErrorDiv.textContent = "";
+            }
+
+            // בדיקת טלפון
+            const phone = phoneInput.value.trim();
+            if (!phone) {
+                errors.push("שדה 'טלפון' הוא חובה");
+                isValid = false;
+            } else if (!validatePhoneClient(phone)) {
+                errors.push("מספר טלפון לא חוקי");
+                phoneErrorDiv.textContent = "יש להשתמש בספרות בלבד, מספר טלפון לא חוקי";
+                isValid = false;
+            } else {
+                phoneErrorDiv.textContent = "";
+            }
+
+            // בדיקת שם הילד
+            const childName = document.getElementById("child_name").value.trim();
+            if (!childName) {
+                errors.push("שדה 'שם הילד/ה' הוא חובה");
+                isValid = false;
+            } else if (!validateHebrewName(childName)) {
+                errors.push("שם הילד/ה אינו חוקי. יש להשתמש רק באותיות בעברית");
+                isValid = false;
+            }
+
+            // בדיקת גיל
+            const childAge = parseInt(ageInput.value);
+            if (!childAge || childAge < 6 || childAge > 13) {
+                errors.push("יש להכניס גיל תקין בין 6 ל-13");
+                isValid = false;
+            }
+
+            // בדיקת מגדר
+            if (!genderSelect.value) {
+                errors.push("יש לבחור בן או בת");
+                isValid = false;
+            }
+
+            // בדיקת קורס
+            if (!courseSelect.value) {
+                errors.push("יש לבחור קורס");
+                isValid = false;
+            }
+
+            // בדיקת סוג קבוצה
+            if (!groupSelect.value) {
+                errors.push("יש לבחור סוג קבוצה");
+                isValid = false;
+            }
+
+            // הצגת שגיאות
+            if (!isValid && errors.length > 0) {
+                alert("נמצאו השגיאות הבאות:\n\n" + errors.join("\n"));
+            }
+
+            return isValid;
+        }
+
+        // בדיקת אימייל בזמן אמת
+        emailInput.addEventListener("blur", () => {
+            const email = emailInput.value.trim();
+            if (!validateEmailClient(email) && email !== "") {
+                emailErrorDiv.textContent = "כתובת אימייל לא חוקית. יש להכניס כתובת תקינה עם סיומת, לדוגמה example@gmail.com";
+            } else {
+                emailErrorDiv.textContent = "";
+            }
+        });
+
+        // בדיקת טלפון בזמן אמת
+        phoneInput.addEventListener("blur", () => {
+            const phone = phoneInput.value.trim();
+            if (!validatePhoneClient(phone) && phone !== "") {
+                phoneErrorDiv.textContent = "מספר טלפון לא חוקי.";
+            } else {
+                phoneErrorDiv.textContent = "";
+            }
+        });
+
+        function updateGroupsByAge() {
+            const age = parseInt(ageInput.value);
+            const gender = genderSelect.value;
+            const selectedCourse = courseSelect.value;
+
+            groupSelect.innerHTML = '<option value="" disabled selected>בחר/י סוג קבוצה</option>';
+            
+            if (isNaN(age)) return;
+
+            if (age >= 6 && age <= 10 && allCourses[gender][selectedCourse]["small"].capacity > 0) {
+                addOption("small", "קבוצה קטנה עד 7 ילדים, גילאי 6–10");
+            }
+            if (age >= 8 && age <= 13 && allCourses[gender][selectedCourse]["regular"].capacity > 0) {
+                addOption("regular", "קבוצה רגילה עד 10 ילדים גילאי 8–13");
+            }
+        }
+
+        function addOption(value, text) {
+            const selectedCourse = courseSelect.value;
+            let displayText = text;
+            
+            if (prices[value]) {
+                const monthlyPrice = prices[value];
+                displayText += ` (${monthlyPrice}* ${prices.months} חודשים)`;
+            }
+
+            if (selectedCourse) {
+                const hasPlace = courseStatus[selectedCourse]?.[value];
+                if (!hasPlace) {
+                    displayText += " (מלא)";
+                }
+            }
+
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = displayText;
+            groupSelect.appendChild(option);
+        }
+
+        function updateCourses() {
+            const gender = genderSelect.value;
+            courseSelect.innerHTML = '<option value="" disabled selected>בחר/י קורס</option>';
+            
+            if (!gender || !allCourses[gender]) return;
+
+            for (const [courseName, course] of Object.entries(allCourses[gender])) {
+                const smallCap = course.small?.capacity || 0;
+                const regularCap = course.regular?.capacity || 0;
+                
+                if (smallCap > 0 || regularCap > 0) {
+                    const option = document.createElement("option");
+                    option.value = courseName;
+                    option.textContent = courseName;
+                    courseSelect.appendChild(option);
+                }
+            }
+            updateButton();
+        }
+
+        function updateButton() {
+            const selectedCourse = courseSelect.value;
+            const selectedGroup = groupSelect.value;
+            
+            if (!selectedCourse || !selectedGroup) return;
+
+            const hasPlace = courseStatus[selectedCourse]?.[selectedGroup];
+            
+            if (hasPlace) {
+                submitButton.textContent = "הרשמה";
+                submitButton.className = "btn-register";
+            } else {
+                submitButton.textContent = "הצטרפות לרשימת המתנה";
+                submitButton.className = "btn-waiting";
+            }
+        }
+
+        // מאזינים לשינויי הבחירה
+        genderSelect.addEventListener("change", updateCourses);
+        courseSelect.addEventListener("change", updateButton);
+        groupSelect.addEventListener("change", updateButton);
+        ageInput.addEventListener("input", updateGroupsByAge);
+        courseSelect.addEventListener("change", updateGroupsByAge);
+
+        // בדיקת הטופס בשליחה רגילה
+        form.addEventListener("submit", (e) => {
+            if (!validateAllFields()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // פרטי חלונית התשלום
+        const modal = document.getElementById("paymentModal");
+        const closeModal = document.getElementById("closeModal");
+        const payButton = document.getElementById("payButton");
+        const paymentRadios = document.getElementsByName("payment_type");
+        const insuranceOptions = document.getElementById("insuranceOptions");
+
+        // הטיפול בלחיצה על כפתור הרשמה - כאן הבדיקה החדשה!
+        submitButton.addEventListener("click", (e) => {
+            const privacyCheckbox = document.getElementById("privacy");
+
+            // בדיקה אם מסומן ה-checkbox
+            if (!privacyCheckbox.checked) {
+                alert("חובה לאשר את מדיניות הפרטיות כדי להמשיך בהרשמה");
+                e.preventDefault(); // עוצר את ההמשך
+                return;
+    }
+            const selectedCourse = courseSelect.value;
+            const selectedGroup = groupSelect.value;
+            const hasPlace = courseStatus[selectedCourse]?.[selectedGroup];
+
+            if (hasPlace) {
+                e.preventDefault(); // מונע שליחת הטופס הרגילה
+                
+                // בדיקת כל השדות לפני פתיחת חלונית התשלום
+                if (!validateAllFields()) {
+                    return; // אם יש שגיאות, לא פותחים את החלונית
+                }
+                
+                // איפוס הבחירות
+                paymentRadios.forEach(r => r.checked = false);
+                const insuranceRadios = document.getElementsByName("insurance_type");
+                insuranceRadios.forEach(r => r.checked = false);
+                insuranceOptions.style.display = "none";
+
+                // הסרת טקסט התחייבויות אם קיים
+                const commitmentsDiv = document.getElementById("commitments-text");
+                if (commitmentsDiv) commitmentsDiv.remove();
+
+                modal.style.display = "block";
+            }
+            // אם אין מקום – הטופס נשלח כרגיל (לרשימת המתנה)
+        });
+
+        closeModal.addEventListener("click", () => {
+            modal.style.display = "none";
+        });
+
+        // הצגת בחירת קופת חולים רק אם נבחר תשלום דרך קופת חולים
+        paymentRadios.forEach(radio => {
+            radio.addEventListener("change", () => {
+                if (radio.value === "insurance" && radio.checked) {
+                    insuranceOptions.style.display = "block";
+                } else {
+                    insuranceOptions.style.display = "none";
+                }
+            });
+        });
+
+        // שליחת הנתונים לשרת כמו submit רגיל
+        payButton.addEventListener("click", () => {
+            
+
+
+
+            let paymentType = document.querySelector('input[name="payment_type"]:checked');
+            if (!paymentType) {
+                alert("יש לבחור סוג תשלום");
+                return;
+            }
+
+            // מחיקה של hidden inputs קודמים אם קיימים
+            ['payment_type', 'insurance', 'commitments'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.remove();
+            });
+
+            // הוספת hidden input לתשלום
+            const inputPayment = document.createElement("input");
+            inputPayment.type = "hidden";
+            inputPayment.name = "payment_type";
+            inputPayment.id = "payment_type";
+            inputPayment.value = paymentType.value;
+            form.appendChild(inputPayment);
+
+            if (paymentType.value === "insurance") {
+                const selectedInsurance = document.querySelector('input[name="insurance_type"]:checked');
+                if (!selectedInsurance) {
+                    alert("יש לבחור קופת חולים");
+                    return;
+                }
+
+                const inputInsurance = document.createElement("input");
+                inputInsurance.type = "hidden";
+                inputInsurance.name = "insurance";
+                inputInsurance.id = "insurance";
+                inputInsurance.value = selectedInsurance.value;
+                form.appendChild(inputInsurance);
+
+                const inputCommitments = document.createElement("input");
+                inputCommitments.type = "hidden";
+                inputCommitments.name = "commitments";
+                inputCommitments.id = "commitments";
+                inputCommitments.value = "לא";
+                form.appendChild(inputCommitments);
+            }
+
+            form.submit(); // שולח את הטופס רגיל
+        });
+
+        // הצגת מספר התחייבויות
+        paymentRadios.forEach(radio => {
+            radio.addEventListener("change", () => {
+                if (radio.value === "insurance" && radio.checked) {
+                    insuranceOptions.style.display = "block";
+                    const selectedGroup = groupSelect.value;
+                    const selectedInsurance = document.querySelector('input[name="insurance_type"]:checked');
+                    let commitmentsNumber = 0;
+
+                    if (selectedInsurance) {
+                        if (selectedInsurance.value === "מאוחדת") {
+                            commitmentsNumber = 20;
+                        } else if (selectedInsurance.value === "לאומית") {
+                            if (selectedGroup === "small") commitmentsNumber = 16;
+                            if (selectedGroup === "regular") commitmentsNumber = 20;
+                        }
+                    }
+
+                    // הצגת הטקסט
+                    let commitmentsDiv = document.getElementById("commitments-text");
+                    if (!commitmentsDiv) {
+                        commitmentsDiv = document.createElement("div");
+                        commitmentsDiv.id = "commitments-text";
+                        commitmentsDiv.style.color = "blue";
+                        commitmentsDiv.style.marginTop = "5px";
+                        insuranceOptions.appendChild(commitmentsDiv);
+                    }
+                    commitmentsDiv.textContent = `מספר ההתחייבויות הנדרש: ${commitmentsNumber}`;
+                } else {
+                    insuranceOptions.style.display = "none";
+                    const commitmentsDiv = document.getElementById("commitments-text");
+                    if (commitmentsDiv) commitmentsDiv.remove();
+                }
+            });
+        });
+
+        // מאזינים גם לשינוי בקופה לאחר שהמשתמש סימן אותה
+        const insuranceRadios = document.querySelectorAll('input[name="insurance_type"]');
+        insuranceRadios.forEach(ins => {
+            ins.addEventListener("change", () => {
+                const selectedGroup = groupSelect.value;
+                let commitmentsNumber = 20;
+
+                if (ins.value === "מאוחדת") {
+                    commitmentsNumber = 20;
+                } else if (ins.value === "לאומית") {
+                    if (selectedGroup === "small") commitmentsNumber = 20;
+                    if (selectedGroup === "regular") commitmentsNumber = 16;
+                }
+
+                let commitmentsDiv = document.getElementById("commitments-text");
+                if (!commitmentsDiv) {
+                    commitmentsDiv = document.createElement("div");
+                    commitmentsDiv.id = "commitments-text";
+                    commitmentsDiv.style.color = "blue";
+                    commitmentsDiv.style.marginTop = "5px";
+                    insuranceOptions.appendChild(commitmentsDiv);
+                }
+                commitmentsDiv.textContent = `מספר ההתחייבויות הנדרש: ${commitmentsNumber}`;
+            });
+        });
+    </script>
+</body>
+</html>

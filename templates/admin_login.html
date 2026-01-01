@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>כניסת מנהל</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h2>כניסת מנהל</h2>
+    {% if error_msg %}
+        <div class="error">{{ error_msg }}</div>
+    {% endif %}
+    <form method="POST">
+        <label for="username">שם משתמש:</label>
+        <input type="text" name="username" id="username" required>
+
+        <label for="password">סיסמה:</label>
+        <input type="password" name="password" id="password" required>
+
+        <button type="submit">כניסה</button>
+    </form>
+</div>
+</body>
+</html>
+<script>window.addEventListener('popstate', function () {
+    // תמיד נעבור לדף מסוים
+    window.location.href = "/register"; 
+});</script>
