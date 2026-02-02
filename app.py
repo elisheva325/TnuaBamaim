@@ -57,103 +57,103 @@ def save_pending(d: Dict[str, dict]):
     with open(PENDING_FILE, 'w', encoding='utf-8') as f:
         json.dump(d, f, ensure_ascii=False, indent=2)
 
-@app.route("/icount_webhook", methods=["POST"])
-def icount_webhook():
-    payload = request.get_json(silent=True) or {}
-    if not payload and request.form:
-        payload = request.form.to_dict(flat=True)
+# @app.route("/icount_webhook", methods=["POST"])
+# def icount_webhook():
+#     payload = request.get_json(silent=True) or {}
+#     if not payload and request.form:
+#         payload = request.form.to_dict(flat=True)
 
-    print("iCount WEBHOOK RAW:", json.dumps(payload, ensure_ascii=False))
+#     print("iCount WEBHOOK RAW:", json.dumps(payload, ensure_ascii=False))
 
-    # ניסיון שליפה ישיר
-    order_ref = (
-        payload.get("more")
-        or payload.get("reference")
-        or request.args.get("more")
-        or request.args.get("reference")
-    )
-    # ניסיון מתוך utm_campaign בסגנון "93?more=UUID"
-    if not order_ref:
-        order_ref = _extract_more_from_utm(payload.get("utm_campaign"))
+#     # ניסיון שליפה ישיר
+#     order_ref = (
+#         payload.get("more")
+#         or payload.get("reference")
+#         or request.args.get("more")
+#         or request.args.get("reference")
+#     )
+#     # ניסיון מתוך utm_campaign בסגנון "93?more=UUID"
+#     if not order_ref:
+#         order_ref = _extract_more_from_utm(payload.get("utm_campaign"))
 
-    if not order_ref:
-        print("WEBHOOK: missing order_ref (no 'more' in payload or utm_campaign)")
-        return "OK", 200
+#     if not order_ref:
+#         print("WEBHOOK: missing order_ref (no 'more' in payload or utm_campaign)")
+#         return "OK", 200
 
-    # טעינת ה-pending וסגירת ההזמנה
-    pending = load_pending()
-    entry = pending.pop(order_ref, None)
-    save_pending(pending)
+#     # טעינת ה-pending וסגירת ההזמנה
+#     pending = load_pending()
+#     entry = pending.pop(order_ref, None)
+#     save_pending(pending)
 
-    if not entry:
-        print(f"WEBHOOK: order_ref {order_ref} not found in pending")
-        return "OK", 200
+#     if not entry:
+#         print(f"WEBHOOK: order_ref {order_ref} not found in pending")
+#         return "OK", 200
 
-    # אימות בסיסי להצלחה. אצלך חזרו doctype=receipt, docnum, confirmation_code
-    success_flag = (
-        str(payload.get("doctype", "")).lower() == "receipt"
-        and payload.get("docnum")
-        and payload.get("confirmation_code")
-    )
-    if not success_flag:
-        print(f"WEBHOOK: order_ref {order_ref} missing success flags, proceeding anyway")
+#     # אימות בסיסי להצלחה. אצלך חזרו doctype=receipt, docnum, confirmation_code
+#     success_flag = (
+#         str(payload.get("doctype", "")).lower() == "receipt"
+#         and payload.get("docnum")
+#         and payload.get("confirmation_code")
+#     )
+#     if not success_flag:
+#         print(f"WEBHOOK: order_ref {order_ref} missing success flags, proceeding anyway")
 
-    # עדכון אסמכתאות מה־IPN לשמירה ברשומה
-    entry["payment_status"] = "שולם"
-    entry.setdefault("icount", {})
-    entry["icount"].update({
-        "docnum": payload.get("docnum"),
-        "doc_url": payload.get("doc_url"),
-        "confirmation_code": payload.get("confirmation_code"),
-        "cc_type": payload.get("cc_type"),
-        "cc_last4": payload.get("cc_last4"),
-        "sum": payload.get("sum"),
-        "currency_code": payload.get("currency_code"),
-        "payment_date": payload.get("payment_date")
-        # "card_token": payload.get("card_token")
-    })
-    # שמירת טוקן הכרטיס אם הגיע ב-IPN
-    token = (
-        payload.get("card_token")
-        or payload.get("cc_token")
-        or payload.get("token")
-        or payload.get("token_id")
-        or payload.get("cc_token_id")
-    )
-    entry.setdefault("icount", {})
-    entry["icount"]["card_token"] = token
-    # נוח גם להחזיק העתק בשורש הרשומה
-    entry["card_token"] = token
+#     # עדכון אסמכתאות מה־IPN לשמירה ברשומה
+#     entry["payment_status"] = "שולם"
+#     entry.setdefault("icount", {})
+#     entry["icount"].update({
+#         "docnum": payload.get("docnum"),
+#         "doc_url": payload.get("doc_url"),
+#         "confirmation_code": payload.get("confirmation_code"),
+#         "cc_type": payload.get("cc_type"),
+#         "cc_last4": payload.get("cc_last4"),
+#         "sum": payload.get("sum"),
+#         "currency_code": payload.get("currency_code"),
+#         "payment_date": payload.get("payment_date")
+#         # "card_token": payload.get("card_token")
+#     })
+#     # שמירת טוקן הכרטיס אם הגיע ב-IPN
+#     token = (
+#         payload.get("card_token")
+#         or payload.get("cc_token")
+#         or payload.get("token")
+#         or payload.get("token_id")
+#         or payload.get("cc_token_id")
+#     )
+#     entry.setdefault("icount", {})
+#     entry["icount"]["card_token"] = token
+#     # נוח גם להחזיק העתק בשורש הרשומה
+#     entry["card_token"] = token
         
 
-    data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
-    data["registered"].append(entry)
-    save_json(REGISTRATIONS_FILE, data)
+#     data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
+#     data["registered"].append(entry)
+#     save_json(REGISTRATIONS_FILE, data)
 
-    # מייל כמו אצלך
-    email_body = f"""
-שם ההורה: {entry['parent_name']} {entry['parent_surname']}
-אימייל: {entry['email']}
-טלפון: {entry['phone']}
-שם הילד/ה: {entry['child_name']}
-גיל: {entry['child_age']}
-מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
-קורס: {entry['course']}
-קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
-סכום לתשלום: {entry['amount_to_pay']} ש"ח
+#     # מייל כמו אצלך
+#     email_body = f"""
+# שם ההורה: {entry['parent_name']} {entry['parent_surname']}
+# אימייל: {entry['email']}
+# טלפון: {entry['phone']}
+# שם הילד/ה: {entry['child_name']}
+# גיל: {entry['child_age']}
+# מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
+# קורס: {entry['course']}
+# קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
+# סכום לתשלום: {entry['amount_to_pay']} ש"ח
 
-אסמכתא: {entry['icount'].get('confirmation_code')}
-מסמך: {entry['icount'].get('docnum')}
-לינק למסמך: {entry['icount'].get('doc_url')}
-כרטיס: {entry['icount'].get('cc_type')} ****{entry['icount'].get('cc_last4')}
-"""
-    if "insurance" in entry:
-        email_body += f"\nקופת חולים: {entry['insurance']}"
-        email_body += f"\nהתחייבויות: {entry.get('commitments','לא')}"
+# אסמכתא: {entry['icount'].get('confirmation_code')}
+# מסמך: {entry['icount'].get('docnum')}
+# לינק למסמך: {entry['icount'].get('doc_url')}
+# כרטיס: {entry['icount'].get('cc_type')} ****{entry['icount'].get('cc_last4')}
+# """
+#     if "insurance" in entry:
+#         email_body += f"\nקופת חולים: {entry['insurance']}"
+#         email_body += f"\nהתחייבויות: {entry.get('commitments','לא')}"
 
-    send_email("רישום חדש לקורס", email_body)
-    print(f"WEBHOOK: order {order_ref} finalized")
-    return "OK", 200
+#     send_email("רישום חדש לקורס", email_body)
+#     print(f"WEBHOOK: order {order_ref} finalized")
+#     return "OK", 200
 
 def _extract_more_from_utm(val: str):
     if not val:
