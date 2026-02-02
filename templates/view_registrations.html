@@ -1,331 +1,210 @@
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <title>נרשמים לקורס</title>
-
-
-    
-    <style>
-        body { font-family: Arial, sans-serif; background:#f4f6f9; padding:20px; }
-        h2 { text-align:center; color:#34495e; }
-        table { width:100%; border-collapse: collapse; margin-top:20px; }
-        th, td { border:1px solid #ddd; padding:10px; text-align:center; }
-        th { background:#3498db; color:white; }
-        tr:nth-child(even) { background:#f9f9f9; }
-        .back { display:inline-block; margin-top:15px; background:#2c3e50; color:white; padding:8px 15px; text-decoration:none; border-radius:6px; }
-        .back:hover { background:#1a252f; }
-        .cancel-btn { background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:5px; cursor:pointer; }
-        .cancel-btn:hover { background:#c0392b; }
-    
-    .modal {
-  display: none;
-  position: fixed;
-  z-index: 100;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.5);
-}
-
-.modal-content {
-  background-color: #f4f6f9;
-  margin: 10% auto;
-  padding: 20px;
-  border-radius: 10px;
-  width: 400px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-.close {
-  color: #aaa;
-  float: right;
-  font-size: 24px;
-  cursor: pointer;
-}
-
-.close:hover {
-  color: #000;
-}
-
-.modal-content input {
-  width: 100%;
-  padding: 6px;
-  margin: 5px 0 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-.modal-content button {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.modal-content button:hover {
-  background: #2980b9;
-}
-
-.toggle-btn {
-    background: #3498db;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 5px;
-    font-size: 0.9em;
-    cursor: pointer;
-}
-.toggle-btn:hover {
-    background: #5b9fcd;
-}
-
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin_panel.css') }}">
 </head>
+
 <body>
-    <a href="{{ url_for('admin_dashboard') }}" class="back">חזרה ללוח מנהל</a>
+    <div class="page-wrapper">
+        <div class="page-card">
+            <div class="page-header">
+                <div class="header-side right">
+                    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">חזרה ללוח מנהל</a>
+                </div>
+                <h2 class="header-title">נרשמים לקורס: {{ course }} ({{ 'קבוצה קטנה' if group_type=='small' else 'קבוצה
+                    רגילה' }})</h2>
+                <div class="header-side left">
+                    <button id="addBtn" class="btn">➕ הוסף נרשם</button>
+                </div>
+            </div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, msg in messages %}
+            {% if category == 'error' %}
+            <div style="color: red; margin-bottom:10px;">{{ msg }}</div>
+            {% else %}
+            <div style="color: green; margin-bottom:10px;">{{ msg }}</div>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
 
-<h2>נרשמים לקורס: {{ course }} ({{ 'קבוצה קטנה' if group_type=='small' else 'קבוצה רגילה' }})</h2>
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, msg in messages %}
-      {% if category == 'error' %}
-        <div style="color: red; margin-bottom:10px;">{{ msg }}</div>
-      {% else %}
-        <div style="color: green; margin-bottom:10px;">{{ msg }}</div>
-      {% endif %}
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+            <div id="addModal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h3>הוספת נרשם</h3>
+                    <form method="POST"
+                        action="{{ url_for('add_registrant', gender=gender, course=course, group_type=group_type) }}">
+                        <label>שם ההורה:</label><br>
+                        <input type="text" name="parent_name" required><br>
+                        <label>שם משפחה:</label><br>
+                        <input type="text" name="parent_surname" required><br>
+                        <label>אימייל:</label><br>
+                        <input type="email" name="email" required><br>
+                        <label>טלפון:</label><br>
+                        <input type="text" name="phone" required><br>
+                        <label>שם הילד/ה:</label><br>
+                        <input type="text" name="child_name" required><br>
+                        <label>גיל:</label><br>
+                        <input type="number" name="child_age" min="1" required><br><br>
+                        <button type="submit" class="btn">הוסף</button>
+                    </form>
+                </div>
+            </div>
 
+            <h3>רשומים</h3>
+            {% if registered_list %}
+            <div class="section-card">
+                <table>
+                    <tr>
+                        <th>שם הילד/ה</th>
+                        <th>גיל</th>
+                        <th>מגדר</th>
+                        <th>שם ההורה</th>
+                        <th>טלפון</th>
+                        <th>אימייל</th>
+                        <th>קופת חולים</th>
+                        <th>התחייבויות</th>
+                        <th>תשלום נוסף</th>
+                        <th>פעולות</th>
+                    </tr>
+                    {% for r in registered_list %}
+                    <tr>
+                        <td>{{ r.child_name }}</td>
+                        <td>{{ r.child_age }}</td>
+                        <td>{{ 'בן' if r.child_gender == 'boys' else 'בת' }}</td>
+                        <td>{{ r.parent_name }} {{ r.parent_surname }}</td>
+                        <td>{{ r.phone }}</td>
+                        <td>{{ r.email }}</td>
+                        <td>{{ r.insurance if r.insurance else "-" }}</td>
+                        <td>
+                            {% if r.commitments and r.commitments != "-" %}
+                            {{ r.commitments }}
+                            <form method="POST" action="{{ url_for('toggle_commitment') }}" style="display:inline;">
+                                <input type="hidden" name="email" value="{{ r.email }}">
+                                <input type="hidden" name="child_name" value="{{ r.child_name }}">
+                                <input type="hidden" name="course" value="{{ r.course }}">
+                                <input type="hidden" name="group_type" value="{{ r.group_type }}">
+                                <input type="hidden" name="gender" value="{{ gender }}">
+                                <button type="submit" class="toggle-btn">שנה</button>
+                            </form>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <!-- <td>{{ r.commitments if r.commitments  else "-" }}</td> -->
+                        <td>
+                            {{ r.extra_payment if r.extra_payment else "-" }}
+                            {% if r.card_token or (r.icount and r.icount.card_token) %}
+                            <br>
+                            <button type="button" class="toggle-btn"
+                                onclick="openChargeModal('{{ r.email }}', '{{ r.child_name }}', '{{ r.course }}', '{{ r.group_type }}')">
+                                💳 חיוב חוזר
+                            </button>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('cancel_registration') }}">
+                                <input type="hidden" name="email" value="{{ r.email }}">
+                                <input type="hidden" name="child_name" value="{{ r.child_name }}">
+                                <input type="hidden" name="course" value="{{ r.course }}">
+                                <input type="hidden" name="group_type" value="{{ r.group_type }}">
+                                <input type="hidden" name="list_type" value="registered">
+                                <input type="hidden" name="gender" value="{{ gender }}">
+                                <button type="submit" class="cancel-btn">❌ בטל</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% else %}
+                <p>אין רשומים כרגע.</p>
+                {% endif %}
+            </div>
+            <h3>רשימת המתנה</h3>
+            {% if waiting_list %}
+            <div class="section-card">
+                <table>
+                    <tr>
+                        <th>שם הילד/ה</th>
+                        <th>גיל</th>
+                        <th>מגדר</th>
+                        <th>שם ההורה</th>
+                        <th>טלפון</th>
+                        <th>אימייל</th>
+                        <th>פעולות</th>
+                    </tr>
+                    {% for w in waiting_list %}
+                    <tr>
+                        <td>{{ w.child_name }}</td>
+                        <td>{{ w.child_age }}</td>
+                        <td>{{ 'בן' if w.child_gender == 'boys' else 'בת' }}</td>
 
-<!-- כפתור לפתיחת החלונית -->
-<button id="addBtn" class="btn" style="margin-bottom:15px;">➕ הוסף נרשם</button>
-
-<!-- חלונית modal -->
-<div id="addModal" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3>הוספת נרשם</h3>
-    <form method="POST" action="{{ url_for('add_registrant', gender=gender, course=course, group_type=group_type) }}">
-      <label>שם ההורה:</label><br>
-      <input type="text" name="parent_name" required><br>
-      <label>שם משפחה:</label><br>
-      <input type="text" name="parent_surname" required><br>
-      <label>אימייל:</label><br>
-      <input type="email" name="email" required><br>
-      <label>טלפון:</label><br>
-      <input type="text" name="phone" required><br>
-      <label>שם הילד/ה:</label><br>
-      <input type="text" name="child_name" required><br>
-      <label>גיל:</label><br>
-      <input type="number" name="child_age" min="1" required><br><br>
-      <button type="submit" class="btn">הוסף</button>
-    </form>
-  </div>
-</div>
-
-<h3>רשומים:</h3>
-{% if registered_list %}
-<table>
-    <tr>
-        <th>שם הילד/ה</th>
-        <th>גיל</th>
-        <th>מגדר</th>
-        <th>שם ההורה</th>
-        <th>טלפון</th>
-        <th>אימייל</th>
-        <th>קופת חולים</th>
-        <th>התחייבויות</th>
-        <th>תשלום נוסף</th>
-        <th>פעולות</th>
-    </tr>
-    {% for r in registered_list %}
-    <tr>
-        <td>{{ r.child_name }}</td>
-        <td>{{ r.child_age }}</td>
-        <td>{{ 'בן' if r.child_gender == 'boys' else 'בת' }}</td>
-        <td>{{ r.parent_name }} {{ r.parent_surname }}</td>
-        <td>{{ r.phone }}</td>
-        <td>{{ r.email }}</td>
-        <td>{{ r.insurance if r.insurance else "-" }}</td>
-           <td>
-        {% if r.commitments and r.commitments != "-" %}
-            {{ r.commitments }}
-            <form method="POST" action="{{ url_for('toggle_commitment') }}" style="display:inline;">
-                <input type="hidden" name="email" value="{{ r.email }}">
-                <input type="hidden" name="child_name" value="{{ r.child_name }}">
-                <input type="hidden" name="course" value="{{ r.course }}">
-                <input type="hidden" name="group_type" value="{{ r.group_type }}">
-                <input type="hidden" name="gender" value="{{ gender }}">
-                <button type="submit" class="toggle-btn">שנה</button>
-            </form>
-        {% else %}
-            -
-        {% endif %}
-    </td>
-        <!-- <td>{{ r.commitments if r.commitments  else "-" }}</td> -->
-        <td>
-  {{ r.extra_payment if r.extra_payment else "-" }}
-  {% if r.card_token or (r.icount and r.icount.card_token) %}
-    <br>
-    <button type="button" class="toggle-btn"
-      onclick="openChargeModal('{{ r.email }}', '{{ r.child_name }}', '{{ r.course }}', '{{ r.group_type }}')">
-      💳 חיוב חוזר
-    </button>
-  {% endif %}
-</td>
-        <td>
-            <form method="POST" action="{{ url_for('cancel_registration') }}">
-                <input type="hidden" name="email" value="{{ r.email }}">
-                <input type="hidden" name="child_name" value="{{ r.child_name }}">
-                <input type="hidden" name="course" value="{{ r.course }}">
-                <input type="hidden" name="group_type" value="{{ r.group_type }}">
-                <input type="hidden" name="list_type" value="registered">
-                <input type="hidden" name="gender" value="{{ gender }}">
-                <button type="submit" class="cancel-btn">❌ בטל</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>אין רשומים כרגע.</p>
-{% endif %}
-
-<h3>רשימת המתנה:</h3>
-{% if waiting_list %}
-<table>
-    <tr>
-        <th>שם הילד/ה</th>
-        <th>גיל</th>
-        <th>מגדר</th>
-        <th>שם ההורה</th>
-        <th>טלפון</th>
-        <th>אימייל</th>
-        <th>פעולות</th>
-    </tr>
-    {% for w in waiting_list %}
-    <tr>
-        <td>{{ w.child_name }}</td>
-        <td>{{ w.child_age }}</td>
-        <td>{{ 'בן' if w.child_gender == 'boys' else 'בת' }}</td>
-
-        <td>{{ w.parent_name }} {{ w.parent_surname }}</td>
-        <td>{{ w.phone }}</td>
-        <td>{{ w.email }}</td>
-        <td>
-            <form method="POST" action="{{ url_for('cancel_registration') }}">
-                <input type="hidden" name="email" value="{{ w.email }}">
-                <input type="hidden" name="child_name" value="{{ w.child_name }}">
-                <input type="hidden" name="course" value="{{ w.course }}">
-                <input type="hidden" name="group_type" value="{{ w.group_type }}">
-                <input type="hidden" name="list_type" value="waiting_list">
-                <input type="hidden" name="gender" value="{{ gender }}">
-                <button type="submit" class="cancel-btn">❌ בטל</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>אין אף אחד ברשימת המתנה.</p>
-{% endif %}
-<!-- חלונית חיוב חוזר -->
-<div id="chargeModal" class="modal">
-  <div class="modal-content">
-    <span class="close" id="closeCharge">&times;</span>
-    <h3>חיוב חוזר</h3>
-    <form id="chargeForm" method="POST" action="{{ url_for('charge_token') }}">
-      <input type="hidden" name="email" id="chargeEmail">
-      <input type="hidden" name="child_name" id="chargeChild">
-      <input type="hidden" name="course" id="chargeCourse">
-      <input type="hidden" name="group_type" id="chargeGroup">
-      <input type="hidden" name="gender" value="{{ gender }}">
-
-      <label>סכום לתשלום (₪):</label><br>
-      <input type="number" step="0.01" min="0.01" name="amount" id="chargeAmount" required><br>
-
-      <label>תיאור:</label><br>
-      <input type="text" name="description" id="chargeDesc" value="תשלום נוסף" required><br>
-
-      <button type="submit">בצע חיוב</button>
-    </form>
-  </div>
-</div>
-
-<script>
-// פתיחת חלונית חיוב חוזר
-function openChargeModal(email, childName, course, groupType) {
-  document.getElementById("chargeEmail").value = email;
-  document.getElementById("chargeChild").value = childName;
-  document.getElementById("chargeCourse").value = course;
-  document.getElementById("chargeGroup").value = groupType;
-  document.getElementById("chargeModal").style.display = "block";
-}
-
-// סגירת החלונית
-document.getElementById("closeCharge").onclick = function() {
-  document.getElementById("chargeModal").style.display = "none";
-};
-window.onclick = function(event) {
-  if (event.target == document.getElementById("chargeModal")) {
-    document.getElementById("chargeModal").style.display = "none";
-  }
-};
-</script>
-
-
-
-
-
-
-<script>
-var modal = document.getElementById("addModal");
-var btn = document.getElementById("addBtn");
-var span = document.getElementsByClassName("close")[0];
-
-//  window.addEventListener("pageshow", function (event) {
-//         if (event.persisted) {
-//             // אם הדף נטען מה-cache (לא מהשרת) - נעשה רענון מלא
-//             window.location.reload();
-//         }
-//     });
-window.addEventListener("pageshow", function (event) {
-    if (event.persisted) {
-        // נחזור תמיד לדף שממנו הגיעו
-        if (document.referrer) {
-            window.location.href = document.referrer;
-        } else {
-            // fallback – אם אין referrer, נחזור לדף הבית
-            window.location.href = "/";
-        }
-    }
-});
-//   history.pushState(null, null, location.href);
-
-// // מאזינים לאירוע popstate
-// window.addEventListener('popstate', function(event) {
-//     // שולחים את המשתמש תמיד ל-admin_panel
-//     location.replace("/admin_panel");
-// });
-
-  // נרשום state ריק כדי ש-popstate יתפוס את ה-back
-
-
-btn.onclick = function() { modal.style.display = "block"; }
-span.onclick = function() { modal.style.display = "none"; }
-window.onclick = function(event) {
-  if (event.target == modal) { modal.style.display = "none"; }
-}
-</script>
-
+                        <td>{{ w.parent_name }} {{ w.parent_surname }}</td>
+                        <td>{{ w.phone }}</td>
+                        <td>{{ w.email }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('cancel_registration') }}">
+                                <input type="hidden" name="email" value="{{ w.email }}">
+                                <input type="hidden" name="child_name" value="{{ w.child_name }}">
+                                <input type="hidden" name="course" value="{{ w.course }}">
+                                <input type="hidden" name="group_type" value="{{ w.group_type }}">
+                                <input type="hidden" name="list_type" value="waiting_list">
+                                <input type="hidden" name="gender" value="{{ gender }}">
+                                <button type="submit" class="cancel-btn">❌ בטל</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            {% else %}
+            <p>אין אף אחד ברשימת המתנה.</p>
+            {% endif %}
+        </div>
+    </div>
 </body>
 
+<script>
+    function openChargeModal(email, childName, course, groupType) {
+        document.getElementById("chargeEmail").value = email;
+        document.getElementById("chargeChild").value = childName;
+        document.getElementById("chargeCourse").value = course;
+        document.getElementById("chargeGroup").value = groupType;
+        document.getElementById("chargeModal").style.display = "block";
+    }
+
+    document.getElementById("closeCharge").onclick = function () {
+        document.getElementById("chargeModal").style.display = "none";
+    };
+    window.onclick = function (event) {
+        if (event.target == document.getElementById("chargeModal")) {
+            document.getElementById("chargeModal").style.display = "none";
+        }
+    };
+
+    var modal = document.getElementById("addModal");
+    var btn = document.getElementById("addBtn");
+    var span = document.getElementsByClassName("close")[0];
+
+    window.addEventListener("pageshow", function (event) {
+        if (event.persisted) {
+            if (document.referrer) {
+                window.location.href = document.referrer;
+            } else {
+                window.location.href = "/";
+            }
+        }
+    });
+
+    btn.onclick = function () { modal.style.display = "block"; }
+    span.onclick = function () { modal.style.display = "none"; }
+    window.onclick = function (event) {
+        if (event.target == modal) { modal.style.display = "none"; }
+    }
+</script>
 
 </html>

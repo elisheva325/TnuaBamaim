@@ -12,385 +12,18 @@ import re
 import uuid
 from typing import Dict
 from urllib.parse import parse_qs
+import requests
+from functions import *
 
 
 app = Flask(__name__)
 
-import requests
-
-payload = {
-    "cid": "tnuabm",
-    "user": "mr0523794544",
-    "pass": "1e091a",
-    "lang": "he",
-    "token": "CARD3E8-C0A82A0C-68F10B48-470260DF",
-    "sum": 0.1,
-    "currency_code": "ILS",
-    "description": "בדיקת חיוב חוזר"
-}
-
-r = requests.post("https://api.icount.co.il/api/v3.php/pay/bytoken", json=payload)
-print(r.status_code)
-print(r.text)
-
-REGISTRATIONS_FILE = 'registrations.json'
-COURSES_FILE = 'courses.json'
-
-ICOUNT_API_URL = "https://api.icount.co.il/api/v3.php/doc/create"
-# BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://karly-doziest-tubulously.ngrok-free.dev")
-
-ICOUNT_SUCCESS_URL = "https://karly-doziest-tubulously.ngrok-free.dev/payment_success"
-ICOUNT_ERROR_URL = "https://karly-doziest-tubulously.ngrok-free.dev/payment_fail"
-
-
-
-PENDING_FILE = 'pending.json'
-
-def load_pending() -> Dict[str, dict]:
-    if not os.path.exists(PENDING_FILE):
-        with open(PENDING_FILE, 'w', encoding='utf-8') as f:
-            json.dump({}, f, ensure_ascii=False, indent=2)
-    with open(PENDING_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-def save_pending(d: Dict[str, dict]):
-    with open(PENDING_FILE, 'w', encoding='utf-8') as f:
-        json.dump(d, f, ensure_ascii=False, indent=2)
-
-# @app.route("/icount_webhook", methods=["POST"])
-# def icount_webhook():
-#     payload = request.get_json(silent=True) or {}
-#     if not payload and request.form:
-#         payload = request.form.to_dict(flat=True)
-
-#     print("iCount WEBHOOK RAW:", json.dumps(payload, ensure_ascii=False))
-
-#     # ניסיון שליפה ישיר
-#     order_ref = (
-#         payload.get("more")
-#         or payload.get("reference")
-#         or request.args.get("more")
-#         or request.args.get("reference")
-#     )
-#     # ניסיון מתוך utm_campaign בסגנון "93?more=UUID"
-#     if not order_ref:
-#         order_ref = _extract_more_from_utm(payload.get("utm_campaign"))
-
-#     if not order_ref:
-#         print("WEBHOOK: missing order_ref (no 'more' in payload or utm_campaign)")
-#         return "OK", 200
-
-#     # טעינת ה-pending וסגירת ההזמנה
-#     pending = load_pending()
-#     entry = pending.pop(order_ref, None)
-#     save_pending(pending)
-
-#     if not entry:
-#         print(f"WEBHOOK: order_ref {order_ref} not found in pending")
-#         return "OK", 200
-
-#     # אימות בסיסי להצלחה. אצלך חזרו doctype=receipt, docnum, confirmation_code
-#     success_flag = (
-#         str(payload.get("doctype", "")).lower() == "receipt"
-#         and payload.get("docnum")
-#         and payload.get("confirmation_code")
-#     )
-#     if not success_flag:
-#         print(f"WEBHOOK: order_ref {order_ref} missing success flags, proceeding anyway")
-
-#     # עדכון אסמכתאות מה־IPN לשמירה ברשומה
-#     entry["payment_status"] = "שולם"
-#     entry.setdefault("icount", {})
-#     entry["icount"].update({
-#         "docnum": payload.get("docnum"),
-#         "doc_url": payload.get("doc_url"),
-#         "confirmation_code": payload.get("confirmation_code"),
-#         "cc_type": payload.get("cc_type"),
-#         "cc_last4": payload.get("cc_last4"),
-#         "sum": payload.get("sum"),
-#         "currency_code": payload.get("currency_code"),
-#         "payment_date": payload.get("payment_date")
-#         # "card_token": payload.get("card_token")
-#     })
-#     # שמירת טוקן הכרטיס אם הגיע ב-IPN
-#     token = (
-#         payload.get("card_token")
-#         or payload.get("cc_token")
-#         or payload.get("token")
-#         or payload.get("token_id")
-#         or payload.get("cc_token_id")
-#     )
-#     entry.setdefault("icount", {})
-#     entry["icount"]["card_token"] = token
-#     # נוח גם להחזיק העתק בשורש הרשומה
-#     entry["card_token"] = token
-        
-
-#     data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
-#     data["registered"].append(entry)
-#     save_json(REGISTRATIONS_FILE, data)
-
-#     # מייל כמו אצלך
-#     email_body = f"""
-# שם ההורה: {entry['parent_name']} {entry['parent_surname']}
-# אימייל: {entry['email']}
-# טלפון: {entry['phone']}
-# שם הילד/ה: {entry['child_name']}
-# גיל: {entry['child_age']}
-# מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
-# קורס: {entry['course']}
-# קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
-# סכום לתשלום: {entry['amount_to_pay']} ש"ח
-
-# אסמכתא: {entry['icount'].get('confirmation_code')}
-# מסמך: {entry['icount'].get('docnum')}
-# לינק למסמך: {entry['icount'].get('doc_url')}
-# כרטיס: {entry['icount'].get('cc_type')} ****{entry['icount'].get('cc_last4')}
-# """
-#     if "insurance" in entry:
-#         email_body += f"\nקופת חולים: {entry['insurance']}"
-#         email_body += f"\nהתחייבויות: {entry.get('commitments','לא')}"
-
-#     send_email("רישום חדש לקורס", email_body)
-#     print(f"WEBHOOK: order {order_ref} finalized")
-#     return "OK", 200
-
-def _extract_more_from_utm(val: str):
-    if not val:
-        return None
-    # לדוגמה "93?more=68d4a17d-..."
-    if "?" in val:
-        q = val.split("?", 1)[1]
-        qs = parse_qs(q)
-        m = qs.get("more", [None])[0]
-        return m
-    return None
-
+app.secret_key = "my_super_secret_key_12345" 
 
 @app.route("/privacy")
 def privacy_policy():
     return render_template("privacy.html")
 
-def validate_email(email):
-    email = email.strip()
-    if not email:
-        return False
-    # בדיקה בסיסית: חייב להכיל @ ולהיות סיומת
-    pattern = r'^[\w\.-]+@[\w\.-]+\.[a-zA-Z]{2,}$'
-    return re.fullmatch(pattern, email) is not None
-
-def validate_name(name):
-    if not name or not name.strip():
-        return False
-    if len(name) > 50:
-        return False
-    # רק אותיות בעברית ורווחים
-    if not re.fullmatch(r"[א-ת\s]+", name):
-        return False
-    return True
-
-def load_json(file_path, default_data):
-    if not os.path.exists(file_path):
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(default_data, f, ensure_ascii=False, indent=2)
-    with open(file_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-def save_json(file_path, data):
-    with open(file_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-def send_email(subject, body):
-    sender_email = "elishevatruz1@gmail.com"
-    sender_password = "wvkb texk wpku iawb"
-    recipient_email = "elishevatruz1@gmail.com"
-    msg = MIMEText(body, _charset='utf-8')
-    msg['Subject'] = subject
-    msg['From'] = sender_email
-    msg['To'] = recipient_email
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(sender_email, sender_password)
-            smtp.send_message(msg)
-    except Exception as e:
-        print(f"שגיאה בשליחת מייל: {e}")
-
-# @app.route('/', methods=['GET','POST'])
-# def register():
-#     data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
-#     data.setdefault('registered', [])
-#     data.setdefault('waiting_list', [])
-#     courses = load_json(COURSES_FILE, {"boys": {}, "girls": {}})
-#     error_msg = None
-#     success_msg = None
-
-#     course_status = {}
-
-#     if request.method == 'POST':
-#         parent_name = request.form.get('parent_name')
-#         parent_surname = request.form.get('parent_surname')
-#         email = request.form.get('email')
-#         phone = request.form.get('phone')
-#         child_name = request.form.get('child_name')
-#         child_age = int(request.form.get('child_age'))
-#         child_gender = request.form.get('child_gender')
-#         course = request.form.get('course')
-#         group_type = request.form.get('group_type')
- 
-
-#         phone_pattern =  re.compile(r'^(?:\+972|0)(?:5\d\d{7}|[23489]\d{7})$')
-
-#         try:
-#             child_age = int(request.form.get('child_age'))
-#         except (ValueError, TypeError):
-#             error_msg = "אנא הכנס גיל תקין במספרים."
-#             flash(error_msg, 'error')
-#             return redirect(url_for('register'))
-
-
-#         if not phone_pattern.match(phone):
-#             error_msg = "מספר טלפון לא חוקי. אנא הכנס מספר תקין, לדוגמה נייד 0521234567 או קו בית 03-1234567"
-#         elif not validate_email(email):
-#             error_msg = "האימייל אינו חוקי. יש להכניס כתובת אימייל תקינה."
-#         elif not validate_name(parent_name):
-#             error_msg = "שם ההורה אינו חוקי. יש להשתמש רק באותיות בעברית."
-#         elif not validate_name(parent_surname):
-#             error_msg = "שם המשפחה אינו חוקי. יש להשתמש רק באותיות בעברית."
-#         elif not validate_name(child_name):
-#             error_msg = "שם המשפחה אינו חוקי. יש להשתמש רק באותיות בעברית."
-        
-#         elif not all([parent_name,parent_surname,email,phone,child_name,child_age,child_gender,course,group_type]):
-#             error_msg = "אנא מלא/י את כל השדות."
-#         else:
-#             # בדיקת גיל
-#             age_range = courses[child_gender][course][group_type]["age_range"]
-#             if not (age_range[0] <= child_age <= age_range[1]):
-#                     error_msg = f"הגיל של הילד/ה לא מתאים ל{ 'קבוצה קטנה' if group_type == 'small' else 'קבוצה רגילה' } (טווח גילאים: {age_range[0]}-{age_range[1]})."
-
-#             else:
-#                 # חישוב אם הקורס מלא
-#                 max_spots = courses[child_gender][course][group_type]["capacity"]
-#                 current_count = sum(
-#                     1 for r in data['registered']
-#                     if r['course'] == course and r['group_type'] == group_type
-#                 )
-#                 max_spots = courses[child_gender][course][group_type]["capacity"]
-#                 is_full = current_count >= max_spots
-
-#                 entry = {
-#                     "parent_name": parent_name,
-#                     "parent_surname": parent_surname,
-#                     "email": email,
-#                     "phone": phone,
-#                     "child_name": child_name,
-#                     "child_age": child_age,
-#                     "child_gender": child_gender,
-#                     "course": course,
-#                     "group_type": group_type
-#                 }
-#                 payment_type = request.form.get("payment_type")
-#                 if payment_type == "insurance":
-#                     insurance = request.form.get("insurance")
-#                     commitments = "לא"
-#                     entry["insurance"] = insurance
-#                     entry["commitments"] = commitments
-#                 prices = load_json('prices.json', {"small": 350, "regular": 280, "months": 5})
-#                 if payment_type == "insurance":
-#                     amount_to_pay = 100
-#                 else:
-#                     if group_type == "small":
-#                         amount_to_pay = prices["small"] * prices.get("months", 1)
-#                     else:
-#                         amount_to_pay = prices["regular"] * prices.get("months", 1)
-
-#                 entry["amount_to_pay"] = amount_to_pay
-
-
-
-
-#                 if not is_full:
-#                     data['registered'].append(entry)
-#                     success_msg = f"ההרשמה שלך לקורס '{course}' ({ 'קבוצה קטנה' if group_type == 'small' else 'קבוצה רגילה' } ) התקבלה בהצלחה!"
-#                     email_body = f"""
-
-#                     שם ההורה: {entry['parent_name']} {entry['parent_surname']}
-#                     אימייל: {entry['email']}
-#                     טלפון: {entry['phone']}
-
-#                     שם הילד/ה: {entry['child_name']}
-#                     גיל: {entry['child_age']}
-#                     מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
-
-#                     קורס: {entry['course']}
-#                     קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
-#                     """
-
-#                     # אם יש שדות נוספים כמו ביטוח/התחייבות – נוסיף
-#                     if "insurance" in entry:
-#                         email_body += f"\nקופת חולים: {entry['insurance']}"
-#                         email_body += f"\nהתחייבויות: {entry.get('commitments','לא')}"
-
-#                     send_email(f"רישום חדש לקורס {course}", email_body)
-                    
-#                     # send_email(f"רישום חדש לקורס {course}", json.dumps(entry, ensure_ascii=False, indent=2))
-#                 else:
-#                     data['waiting_list'].append(entry)
-#                     success_msg = f"הקורס מלא, נרשמת בהצלחה לרשימת המתנה לקורס '{course}' ({ 'קבוצה קטנה' if group_type == 'small' else 'קבוצה רגילה' } )."
-#                     email_body = f"""
-
-#                     שם ההורה: {entry['parent_name']} {entry['parent_surname']}
-#                     אימייל: {entry['email']}
-#                     טלפון: {entry['phone']}
-
-#                     שם הילד/ה: {entry['child_name']}
-#                     גיל: {entry['child_age']}
-#                     מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
-
-#                     קורס: {entry['course']}
-#                     קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
-#                     """
-
-#                     # אם יש שדות נוספים כמו ביטוח/התחייבות – נוסיף
-#                     if "insurance" in entry:
-#                         email_body += f"\nקופת חולים: {entry['insurance']}"
-#                         email_body += f"\nהתחייבויות: {entry.get('commitments','לא')}"
-
-#                     send_email(f"רשימת המתנה - קורס {course}", email_body)
-#                     # send_email(f"רשימת המתנה - קורס {course}", json.dumps(entry, ensure_ascii=False, indent=2))
-
-#                 save_json(REGISTRATIONS_FILE, data)
-                
-
-#     # עדכון סטטוס קורסים עבור JS
-#     for gender, gender_courses in courses.items():
-#         for course_name, groups in gender_courses.items():
-#             course_status[course_name] = {}
-#             for g_type, info in groups.items():
-#                 if info["capacity"] == 0:
-#                     course_status[course_name][g_type] = False
-#                 else:
-#                     count = sum(
-#                         1 for r in data['registered']
-#                         if r['course'] == course_name and r['group_type'] == g_type
-#                     )
-#                     course_status[course_name][g_type] = count < info["capacity"]
-                
-#     if success_msg:
-#         flash(success_msg, 'success')
-#         return redirect(url_for('register'))
-#     elif error_msg:
-#         flash(error_msg, 'error')
-#         return redirect(url_for('register'))
-
-    
-#     prices = load_json('prices.json', {"small": 350, "regular": 280})
-#     return render_template(
-#         'register.html',
-#         courses=courses,
-#         course_status=course_status,
-#         prices=prices
-#     )
-   
 @app.route('/', methods=['GET','POST'])
 def register():
     data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
@@ -400,7 +33,6 @@ def register():
 
     prices = load_json('prices.json', {"small": 350, "regular": 280, "months": 5, "registration_active": True})
     
-    # וידוא שיש שדה registration_active
     if 'registration_active' not in prices:
         prices['registration_active'] = True
         save_json('prices.json', prices)
@@ -420,7 +52,6 @@ def register():
         if request.form.get('privacy') != 'accepted':
             flash("חובה לאשר את מדיניות הפרטיות", "error")
             return redirect(url_for('register'))
-        # קבלת הנתונים הבסיסיים
 
         parent_name = request.form.get('parent_name', '').strip()
         parent_surname = request.form.get('parent_surname', '').strip()
@@ -432,7 +63,6 @@ def register():
         course = request.form.get('course', '').strip()
         group_type = request.form.get('group_type', '').strip()
         
-        # תחילה - בדיקה בסיסית של השדות החובה לפני הכל
         if not all([parent_name, parent_surname, email, phone, child_name, child_age_str, child_gender, course, group_type]):
             error_msg = "אנא מלא/י את כל השדות החובה."
             flash(error_msg, 'error')
@@ -549,28 +179,15 @@ def register():
                 else:
                     amount_to_pay = prices["regular"] * prices.get("months", 1)
             
-            # entry["amount_to_pay"] = amount_to_pay
             
-            # # return redirect(payment_url)
-            # session["pending_entry"] = entry
-
-            
-            # # 3) אם עמוד הסליקה שלך תומך בפרמטר סכום ב-URL, אפשר לצרף אותו כך:
-            # #    אין באפשרותי לאשר את שם הפרמטר המדויק. אם לא עובד, השאירי בלי פרמטר והסכום יוגדר בעמוד עצמו.
-            # checkout_url = "https://app.icount.co.il/m/8eb31/cd16ap5du68f109677e?utm_source=iCount&utm_medium=paypage&utm_campaign=93" # למשל: f"{ICOUNT_CHECKOUT_URL}?sum={amount_to_pay}"
-
-            # return redirect(checkout_url)
-            # מזהה הזמנה ייחודי כדי לשייך בין הסליקה לבין ההזמנה
             order_ref = str(uuid.uuid4())
             entry["order_ref"] = order_ref
             entry["amount_to_pay"] = amount_to_pay
 
-            # נשמור ב-pending (לא תלוי session)
             pending = load_pending()
             pending[order_ref] = entry
             save_pending(pending)
 
-            # נשמור גם ב-session כתמיכה משנית לחזרה דרך הדפדפן
             session["pending_entry"] = entry
             if payment_type == "insurance":
                 ICOUNT_CHECKOUT_URL=os.getenv("ICOUNT_CHECKOUT_URL", "https://app.icount.co.il/m/62b62/cd16ap6au6956c4ee7e?utm_source=iCount&utm_medium=paypage&utm_campaign=106")
@@ -578,7 +195,6 @@ def register():
                 ICOUNT_CHECKOUT_URL = os.getenv("ICOUNT_CHECKOUT_URL", "https://app.icount.co.il/m/8eb31/cd16ap5du68f109677e?utm_source=iCount&utm_medium=paypage&utm_campaign=93")
             else:
                 ICOUNT_CHECKOUT_URL = os.getenv("ICOUNT_CHECKOUT_URL", "https://app.icount.co.il/m/6e4a9/cd16ap65u6956c51a18?utm_source=iCount&utm_medium=paypage&utm_campaign=101")
-            # ננסה להעביר את מזהה ההזמנה כפרמטר. ברוב עמודי הסליקה הפרמטר more חוזר ב-URL תגובות וב-IPN.
             checkout_url = f"{ICOUNT_CHECKOUT_URL}?more={order_ref}"
 
             return redirect(checkout_url)
@@ -659,15 +275,6 @@ def register():
     )
 
 
-app.secret_key = "my_super_secret_key_12345"  
-
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "1234"
-
-FAILED_LOGINS = {}
-MAX_ATTEMPTS = 3
-LOCK_TIME = 60 * 30   # חצי שעה חסימה
-
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     error_msg = None
@@ -708,18 +315,6 @@ def admin_login():
             error_msg = f"שם משתמש או סיסמה שגויים. נשארו לך {MAX_ATTEMPTS - attempts} ניסיונות."
 
     return render_template('admin_login.html', error_msg=error_msg)
-# @app.route('/admin_login', methods=['GET', 'POST'])
-# def admin_login():
-#     error_msg = None
-#     if request.method == 'POST':
-#         username = request.form.get('username')
-#         password = request.form.get('password')
-#         if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-#             session['admin_logged_in'] = True
-#             return redirect(url_for('admin_dashboard'))
-#         else:
-#             error_msg = "שם משתמש או סיסמה שגויים."
-#     return render_template('admin_login.html', error_msg=error_msg)
 
 @app.route('/admin_dashboard')
 def admin_dashboard():
@@ -727,27 +322,6 @@ def admin_dashboard():
         return redirect(url_for('admin_login'))
     # כאן תכניסי את כל המידע שהמנהל יכול לראות
     return admin_panel()
-
-def admin_panel():
-    # courses = load_json(COURSES_FILE, {"boys": {}, "girls": {}})
-    # prices = load_prices()
-    # return render_template("admin_panel.html", courses=courses, prices=prices)
-    courses = load_json(COURSES_FILE, {"boys": {}, "girls": {}})
-    prices = load_json('prices.json', {"small": 350, "regular": 280, "months": 5, "registration_active": True})
-    
-    # וידוא שיש שדה registration_active
-    if 'registration_active' not in prices:
-        prices['registration_active'] = True
-        save_json('prices.json', prices)
-    
-    registration_active = prices.get('registration_active', True)
-    
-    return render_template(
-        'admin_panel.html', 
-        courses=courses, 
-        prices=prices,
-        registration_active=registration_active
-    )
 
 
 @app.route('/update_capacity', methods=['POST'])
@@ -778,19 +352,16 @@ def view_registrations():
     course = request.args.get("course")
     group_type = request.args.get("group_type")
     
-    # הוסף הדפסה לבדיקה
     print("gender מתקבל:", repr(gender))
     print("course מתקבל:", repr(course))
     print("group_type מתקבל:", repr(group_type))
     
-    # וודא שכל הפרמטרים קיימים
     if not gender or not course or not group_type:
         flash("פרמטרים חסרים", "error")
         return redirect(url_for('admin_dashboard'))
     
     data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
 
-    # סינון הרשומים והרשימת המתנה לפי הקורס והקבוצה
     registered_list = [
         r for r in data['registered']
         if r['course'] == course and r['group_type'] == group_type
@@ -808,52 +379,64 @@ def view_registrations():
         registered_list=registered_list,
         waiting_list=waiting_list
     )
+def _extract_more_from_utm(val: str):
+    if not val:
+        return None
+    if "?" in val:
+        q = val.split("?", 1)[1]
+        qs = parse_qs(q)
+        m = qs.get("more", [None])[0]
+        return m
+    return None
 
-
-@app.route("/payment_success", methods=["POST"])
+@app.route("/payment_success", methods=["GET", "POST"], strict_slashes=False)
 def payment_success():
-    print("ICOUNT IPN RECEIVED:", dict(request.values))
+    try:
+        print("ICOUNT IPN RECEIVED:", dict(request.values))
 
-    order_ref = (
-        request.values.get("more")
-        or request.values.get("reference")
-        or _extract_more_from_utm(request.values.get("utm_campaign"))
-    )
+        order_ref = (
+            request.values.get("more")
+            or request.values.get("reference")
+            or _extract_more_from_utm(request.values.get("utm_campaign"))
+        )
 
-    if not order_ref:
-        return "missing reference", 400
+        if not order_ref:
+            return "missing reference", 400
 
-    pending = load_pending()
-    entry = pending.pop(order_ref, None)
-    save_pending(pending)
+        pending = load_pending()
+        entry = pending.pop(order_ref, None)
+        save_pending(pending)
 
-    if not entry:
-        return "not found", 200   # חשוב לא להחזיר שגיאה
+        if not entry:
+            return "not found", 200   # חשוב לא להחזיר שגיאה
 
-    entry["payment_status"] = "שולם"
+        entry["payment_status"] = "שולם"
 
-    data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
-    data["registered"].append(entry)
-    save_json(REGISTRATIONS_FILE, data)
+        data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
+        data["registered"].append(entry)
+        save_json(REGISTRATIONS_FILE, data)
 
-    email_body = f"""
-שם ההורה: {entry['parent_name']} {entry['parent_surname']}
-אימייל: {entry['email']}
-טלפון: {entry['phone']}
-שם הילד/ה: {entry['child_name']}
-גיל: {entry['child_age']}
-מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
-קורס: {entry['course']}
-קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
-סכום לתשלום: {entry['amount_to_pay']} ש"ח
-"""
-    if "insurance" in entry:
-        email_body += f"\nקופת חולים: {entry['insurance']}"
-        email_body += f"\nהתחייבויות: {entry.get('commitments','לא')}"
+        email_body = f"""
+    שם ההורה: {entry['parent_name']} {entry['parent_surname']}
+    אימייל: {entry['email']}
+    טלפון: {entry['phone']}
+    שם הילד/ה: {entry['child_name']}
+    גיל: {entry['child_age']}
+    מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
+    קורס: {entry['course']}
+    קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
+    סכום לתשלום: {entry['amount_to_pay']} ש"ח
+    """
+        if "insurance" in entry:
+            email_body += f"\nקופת חולים: {entry['insurance']}"
+            email_body += f"\nהתחייבויות: {entry.get('commitments','לא')}"
 
-    send_email("רישום חדש לקורס", email_body)
+        send_email("רישום חדש לקורס", email_body)
 
-    return "OK", 200
+        return "OK", 200
+    except Exception as e:
+        print("PAYMENT_SUCCESS ERROR:", e)
+        return "server error", 500
 
 @app.route("/payment_fail")
 def payment_fail():
@@ -1080,20 +663,6 @@ def add_registrant(gender, course, group_type):
     return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
 
 
-PRICES_FILE = 'prices.json'
-
-def load_prices():
-    if not os.path.exists(PRICES_FILE):
-        # יצירת קובץ ברירת מחדל אם לא קיים
-        default_prices = {"small": 350, "regular": 280 ,"months": 5}
-        with open(PRICES_FILE, 'w', encoding='utf-8') as f:
-            json.dump(default_prices, f, ensure_ascii=False, indent=2)
-    with open(PRICES_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-def save_prices(prices):
-    with open(PRICES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(prices, f, ensure_ascii=False, indent=2)
 
 @app.route('/update_prices', methods=['POST'])
 def update_prices():
@@ -1151,7 +720,6 @@ def toggle_commitment():
 
 # פונקציה להפסקת/חידוש רישום
 @app.route('/toggle_registration', methods=['POST'])
-
 def toggle_registration():
     """מחליף את סטטוס הרישום בין פעיל ללא פעיל"""
     prices = load_json('prices.json', {"small": 350, "regular": 280, "months": 5, "registration_active": True})
@@ -1171,67 +739,67 @@ def toggle_registration():
     return redirect(url_for('admin_dashboard'))
 
 
-@app.route('/charge_token', methods=['POST'])
-def charge_token():
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
+# @app.route('/charge_token', methods=['POST'])
+# def charge_token():
+#     if not session.get("admin_logged_in"):
+#         return redirect(url_for("admin_login"))
 
-    email = request.form.get("email")
-    child_name = request.form.get("child_name")
-    course = request.form.get("course")
-    group_type = request.form.get("group_type")
-    gender = request.form.get("gender")
-    amount = float(request.form.get("amount"))
-    description = request.form.get("description") or "תשלום נוסף"
+#     email = request.form.get("email")
+#     child_name = request.form.get("child_name")
+#     course = request.form.get("course")
+#     group_type = request.form.get("group_type")
+#     gender = request.form.get("gender")
+#     amount = float(request.form.get("amount"))
+#     description = request.form.get("description") or "תשלום נוסף"
 
-    data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
-    registrant = next((r for r in data["registered"]
-                       if r["email"] == email and r["child_name"] == child_name and
-                          r["course"] == course and r["group_type"] == group_type), None)
+#     data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
+#     registrant = next((r for r in data["registered"]
+#                        if r["email"] == email and r["child_name"] == child_name and
+#                           r["course"] == course and r["group_type"] == group_type), None)
 
-    if not registrant:
-        flash("לא נמצאה הרשומה לתשלום חוזר", "error")
-        return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
+#     if not registrant:
+#         flash("לא נמצאה הרשומה לתשלום חוזר", "error")
+#         return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
 
-    token = (registrant.get("icount", {}) or {}).get("card_token") or registrant.get("card_token")
-    if not token:
-        flash("לא נמצא טוקן שמור לכרטיס האשראי", "error")
-        return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
+#     token = (registrant.get("icount", {}) or {}).get("card_token") or registrant.get("card_token")
+#     if not token:
+#         flash("לא נמצא טוקן שמור לכרטיס האשראי", "error")
+#         return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
 
-    payload = {
-        "cid": ICOUNT_CID,
-        "user": ICOUNT_USER,
-        "pass": ICOUNT_PASS,
-        "cc_token": token,
-        "sum": amount,
-        "currency_code": "ILS",
-        "description": description,
-        "doctype": "receipt",
-        "email_client": 0
-    }
+#     payload = {
+#         "cid": ICOUNT_CID,
+#         "user": ICOUNT_USER,
+#         "pass": ICOUNT_PASS,
+#         "cc_token": token,
+#         "sum": amount,
+#         "currency_code": "ILS",
+#         "description": description,
+#         "doctype": "receipt",
+#         "email_client": 0
+#     }
 
-    try:
-        res = requests.post("https://api.icount.co.il/api/v3.php/pay/bytoken", data=payload, timeout=20)
-        response_data = res.json()
-        if not response_data.get("status"):
-            flash(f"שגיאה בחיוב: {response_data.get('error_description', 'לא ידועה')}", "error")
-            return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
-    except Exception as e:
-        flash(f"שגיאה בחיבור ל-iCount: {str(e)}", "error")
-        return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
+#     try:
+#         res = requests.post("https://api.icount.co.il/api/v3.php/pay/bytoken", data=payload, timeout=20)
+#         response_data = res.json()
+#         if not response_data.get("status"):
+#             flash(f"שגיאה בחיוב: {response_data.get('error_description', 'לא ידועה')}", "error")
+#             return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
+#     except Exception as e:
+#         flash(f"שגיאה בחיבור ל-iCount: {str(e)}", "error")
+#         return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
 
-    # שמירת פרטי החיוב
-    registrant.setdefault("extra_payments", []).append({
-        "amount": amount,
-        "description": description,
-        "timestamp": datetime.now().isoformat(),
-        "docnum": response_data.get("docnum"),
-        "confirmation_code": response_data.get("confirmation_code")
-    })
-    save_json(REGISTRATIONS_FILE, data)
+#     # שמירת פרטי החיוב
+#     registrant.setdefault("extra_payments", []).append({
+#         "amount": amount,
+#         "description": description,
+#         "timestamp": datetime.now().isoformat(),
+#         "docnum": response_data.get("docnum"),
+#         "confirmation_code": response_data.get("confirmation_code")
+#     })
+#     save_json(REGISTRATIONS_FILE, data)
 
-    flash("החיוב בוצע בהצלחה!", "success")
-    return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
+#     flash("החיוב בוצע בהצלחה!", "success")
+#     return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
 
 if __name__ == '__main__':
     app.run(debug=True)

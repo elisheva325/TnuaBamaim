@@ -1,0 +1,275 @@
+:root {
+    --primary-color: #4a90e2;
+    --secondary-color: #2c3e50;
+    --success-color: #27ae60;
+    --danger-color: #e74c3c;
+    --warning-color: #f39c12;
+    --bg-color: #f4f7f6;
+    --card-bg: #ffffff;
+    --text-color: #333;
+    --border-radius: 12px;
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    direction: rtl;
+    margin: 0;
+    padding: 0;
+}
+
+.page-wrapper {
+    padding: 20px 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.page-card {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 1200px;
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.page-header {
+    display: grid;
+    /* הגדרת 3 עמודות: הצדדים מקבלים מינימום הכרחי, האמצע מקבל את כל השאר */
+    grid-template-columns: 150px 1fr 150px;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 20px;
+    gap: 10px;
+}
+
+.header-side.right {
+    justify-self: start;
+    /* נצמד לימין (חזרה) */
+}
+
+.header-side.left {
+    justify-self: end;
+    /* נצמד לשמאל (הוסף נרשם) */
+}
+
+.header-title {
+    grid-column: 2;
+    /* תמיד בעמודה האמצעית */
+    margin: 0 !important;
+    text-align: center;
+    font-size: 1.3rem;
+    /* הקטנתי מעט כדי שייכנס טוב יותר */
+    line-height: 1.2;
+}
+
+/* כפתור קומפקטי יותר כדי שלא "יחנק" את הכותרת */
+#addBtn {
+    padding: 8px 15px !important;
+    /* פחות ריפוד */
+    font-size: 14px !important;
+    white-space: nowrap;
+    /* מונע מהטקסט בכפתור לרדת שורה */
+    margin: 0 !important;
+}
+
+.back-btn {
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+/* התאמה למסכים קטנים מאוד */
+@media (max-width: 800px) {
+    .page-header {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .header-side,
+    .header-title {
+        width: 100%;
+        text-align: center !important;
+        justify-self: center;
+    }
+}
+
+h2,
+h3 {
+    color: var(--secondary-color);
+    margin-top: 0;
+    text-align: center;
+    /* המרכוז שביקשת */
+    width: 100%;
+}
+
+/* כפתורים */
+.btn {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn:hover {
+    background-color: #357abd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.back-btn {
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.back-btn:hover {
+    text-decoration: underline;
+}
+
+/* טבלאות */
+.section-card {
+    overflow-x: auto;
+    margin-bottom: 40px;
+    border: 1px solid #eee;
+    border-radius: var(--border-radius);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+    background: white;
+}
+
+th {
+    background-color: #f8f9fa;
+    color: var(--secondary-color);
+    padding: 15px;
+    font-weight: 600;
+    border-bottom: 2px solid #eee;
+}
+
+td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+tr:hover {
+    background-color: #f9fbff;
+}
+
+/* כפתורי פעולה בתוך טבלה */
+.cancel-btn {
+    background: none;
+    border: 1px solid var(--danger-color);
+    color: var(--danger-color);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: 0.2s;
+}
+
+.cancel-btn:hover {
+    background: var(--danger-color);
+    color: white;
+}
+
+.toggle-btn {
+    background: #eef5ff;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.toggle-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* מודאל (חלון קופץ) */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: var(--border-radius);
+    width: 400px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.close {
+    position: absolute;
+    left: 20px;
+    top: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+}
+
+/* טפסים בתוך מודאל */
+form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    /* חשוב מאוד למניעת חריגת האינפוט */
+}
+
+/* הודעות פלאש */
+.flash-message {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}

@@ -1,105 +1,112 @@
 body {
-            font-family: 'Heebo', sans-serif;
-            background: #f2f7ff;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding-top: 40px;
-        }
-
-        .container {
-            background: white;
-            padding: 30px 40px;
-            border-radius: 16px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 500px;
-        }
-
-        h2 {
-            text-align: center;
-            color: #005792;
-            margin-bottom: 25px;
-        }
-
-        label {
-            font-weight: bold;
-            margin-top: 15px;
-            display: block;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            margin-top: 6px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 1em;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1em;
-            margin-top: 25px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .btn-register {
-            background: #005792;
-            color: white;
-        }
-
-        .btn-register:hover {
-            background: #003f6b;
-        }
-
-        .btn-waiting {
-            background: #c77d00;
-            color: white;
-        }
-
-        .btn-waiting:hover {
-            background: #a86200;
-        }
-
-        .success {
-            background: #e0f7e9;
-            color: #207245;
-            border-right: 6px solid #45d48d;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-
-        .error {
-            background: #ffe0e0;
-            color: #912222;
-            border-right: 6px solid #f77c7c;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-        .admin-login {
-    text-align: right;
-    margin-bottom: 20px;
+  font-family: 'Heebo', sans-serif;
+  background: #f2f7ff;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 40px;
 }
+
+.container {
+  background: white;
+  padding: 30px 40px;
+  border-radius: 16px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+}
+
+h2 {
+  text-align: center;
+  color: #005792;
+  margin-bottom: 25px;
+}
+
+label {
+  font-weight: bold;
+  margin-top: 15px;
+  display: block;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1em;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1em;
+  margin-top: 25px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-register {
+  background: #005792;
+  color: white;
+}
+
+.btn-register:hover {
+  background: #003f6b;
+}
+
+.btn-waiting {
+  background: #c77d00;
+  color: white;
+}
+
+.btn-waiting:hover {
+  background: #a86200;
+}
+
+.success {
+  background: #e0f7e9;
+  color: #207245;
+  border-right: 6px solid #45d48d;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.error {
+  background: #ffe0e0;
+  color: #912222;
+  border-right: 6px solid #f77c7c;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.admin-login {
+  text-align: right;
+  margin-bottom: 20px;
+}
+
 .admin-login a {
-    background-color: #005792;
-    color: white;
-    padding: 6px 12px;
-    text-decoration: none;
-    border-radius: 4px;
-    position: absolute;  /* או fixed אם את רוצה שהוא יישאר גם בגלילה */
-    top: 10px;           /* מרחק מהחלק העליון */
-    right: 10px; 
+  background-color: #005792;
+  color: white;
+  padding: 6px 12px;
+  text-decoration: none;
+  border-radius: 4px;
+  position: absolute;
+  /* או fixed אם את רוצה שהוא יישאר גם בגלילה */
+  top: 10px;
+  /* מרחק מהחלק העליון */
+  right: 10px;
 }
+
 .admin-login a:hover {
-    background-color: #003f6b;
+  background-color: #003f6b;
 }
+
 .modal {
   position: fixed;
   z-index: 1000;
@@ -108,14 +115,15 @@ body {
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgba(0, 0, 0, 0.4);
 }
+
 fieldset {
   border: none;
 }
 
 .modal-content {
-    position: relative;
+  position: relative;
   background-color: #fefefe;
   margin: 15% auto;
   padding: 20px;
@@ -130,13 +138,15 @@ fieldset {
   font-size: 14px;
   color: #555;
   margin-top: 4px;
-  margin-left: 24px; /* הזחה כדי להבדיל מהטקסט הראשי */
+  margin-left: 24px;
+  /* הזחה כדי להבדיל מהטקסט הראשי */
 }
 
 
 /* המודאל עצמו */
 .modal {
-  display: none; /* יופיע רק בלחיצה */
+  display: none;
+  /* יופיע רק בלחיצה */
   position: fixed;
   z-index: 1000;
   left: 0;
@@ -144,7 +154,8 @@ fieldset {
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(0,0,0,0.5); /* רקע כהה שקוף */
+  background-color: rgba(0, 0, 0, 0.5);
+  /* רקע כהה שקוף */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -153,13 +164,13 @@ fieldset {
 
 /* תוכן המודאל */
 .modal-content {
-    position: relative;
+  position: relative;
   background-color: #fff;
   padding: 30px 40px;
   border-radius: 12px;
   width: 90%;
   max-width: 400px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   text-align: center;
   animation: slideDown 0.3s;
 }
@@ -187,11 +198,12 @@ fieldset {
 
 .insurance-options {
   margin-top: 15px;
-  display: none; /* יופיע רק אם נבחר ביטוח */
+  display: none;
+  /* יופיע רק אם נבחר ביטוח */
   background: #f9f9f9;
   padding: 10px 15px;
   border-radius: 8px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn-pay {
@@ -212,35 +224,59 @@ fieldset {
 
 /* אנימציות */
 @keyframes fadeIn {
-  from {opacity: 0;}
-  to {opacity: 1;}
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideDown {
-  from {transform: translateY(-20px); opacity: 0;}
-  to {transform: translateY(0); opacity: 1;}
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* הוסיפי ל-style.css */
 .privacy-container {
-    direction: rtl;            /* כדי שהצ'קבוקס יהיה מימין */
-    display: flex;             /* מסדר בשורה אחת */
-    align-items: center;       /* מיישר אנכית */
-    gap: 5px;                  /* רווח קטן בין הצ'קבוקס לטקסט */
-    margin-top: 15px;          /* רווח עליון כמו לפני */
-    /* justify-content: flex-end; הצ'קבוקס + טקסט יהיו קרובים לשוליים מימין */
-    /* flex-wrap: nowrap;          */
+  direction: rtl;
+  /* כדי שהצ'קבוקס יהיה מימין */
+  display: flex;
+  /* מסדר בשורה אחת */
+  align-items: center;
+  /* מיישר אנכית */
+  gap: 5px;
+  /* רווח קטן בין הצ'קבוקס לטקסט */
+  margin-top: 15px;
+  /* רווח עליון כמו לפני */
+  /* justify-content: flex-end; הצ'קבוקס + טקסט יהיו קרובים לשוליים מימין */
+  /* flex-wrap: nowrap;          */
 }
 
 .privacy-container label {
-    white-space: nowrap;       /* לא לתת לטקסט להישבר לשורה */
-    cursor: pointer;           /* כשרוצים ללחוץ על הטקסט גם */
+  white-space: nowrap;
+  /* לא לתת לטקסט להישבר לשורה */
+  cursor: pointer;
+  /* כשרוצים ללחוץ על הטקסט גם */
 }
+
 .privacy-container input {
-    
-    width: auto;               /* לשנות את רוחב הצ'קבוקס */
-    vertical-align: middle;    /* מיישר את הצ'קבוקס לאמצע הטקסט */
-    position: relative;
-    top: 7px;                 /* מעלה מעט את הצ'קבוקס מעל הטקסט */
-    margin: 0;                 /* להסיר מרווחים מיותרים */
+
+  width: auto;
+  /* לשנות את רוחב הצ'קבוקס */
+  vertical-align: middle;
+  /* מיישר את הצ'קבוקס לאמצע הטקסט */
+  position: relative;
+  top: 7px;
+  /* מעלה מעט את הצ'קבוקס מעל הטקסט */
+  margin: 0;
+  /* להסיר מרווחים מיותרים */
 }
