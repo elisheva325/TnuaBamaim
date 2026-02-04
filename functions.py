@@ -1,17 +1,9 @@
-from time import time
-from flask import session, redirect, url_for
-from flask import flash
-from openpyxl import Workbook
-from flask import send_file
-import io
+
 import requests
-from flask import Flask, render_template, request
 import json, os, smtplib
 from email.mime.text import MIMEText
 import re
-import uuid
 from typing import Dict
-from urllib.parse import parse_qs
 import requests
 
 payload = {
@@ -45,6 +37,8 @@ LOCK_TIME = 60 * 30   # חצי שעה חסימה
 
 PENDING_FILE = 'pending.json'
 PRICES_FILE = 'prices.json'
+
+
 
 def load_prices():
     if not os.path.exists(PRICES_FILE):
@@ -116,24 +110,78 @@ def send_email(subject, body):
             smtp.send_message(msg)
     except Exception as e:
         print(f"שגיאה בשליחת מייל: {e}")
-def admin_panel():
-    # courses = load_json(COURSES_FILE, {"boys": {}, "girls": {}})
-    # prices = load_prices()
-    # return render_template("admin_panel.html", courses=courses, prices=prices)
-    courses = load_json(COURSES_FILE, {"boys": {}, "girls": {}})
-    prices = load_json('prices.json', {"small": 350, "regular": 280, "months": 5, "registration_active": True})
+# def admin_panel():
+
+#     courses = load_json(COURSES_FILE, {"boys": {}, "girls": {}})
+#     prices = load_json('prices.json', {"small": 350, "regular": 280, "months": 5, "registration_active": True})
     
-    # וידוא שיש שדה registration_active
-    if 'registration_active' not in prices:
-        prices['registration_active'] = True
-        save_json('prices.json', prices)
+#     # וידוא שיש שדה registration_active
+#     if 'registration_active' not in prices:
+#         prices['registration_active'] = True
+#         save_json('prices.json', prices)
     
-    registration_active = prices.get('registration_active', True)
+#     registration_active = prices.get('registration_active', True)
     
-    return render_template(
-        'admin_panel.html', 
-        courses=courses, 
-        prices=prices,
-        registration_active=registration_active
-    )
+#     return render_template(
+#         'admin_panel.html', 
+#         courses=courses, 
+#         prices=prices,
+#         registration_active=registration_active
+#     )
+
+
+
+
+
+def load_prices_from_db(db):
+    rows = db.session.execute(
+        db.text("""
+            select
+                name,
+                price,
+                duration_months
+            from course_types
+        """)
+    ).mappings().all()
+
+    prices = {}
+    for row in rows:
+        prices[row["name"]] = row["price"]
+        prices["months"] = row["duration_months"]
+
+    # כרגע נשים קבוע. אפשר להעביר לטבלת settings בהמשך
+    prices["registration_active"] = True
+
+    return prices
+
+def load_courses_from_db(db):
+    rows = db.session.execute(
+        db.text("""
+            select
+                c.course_name,
+                c.gender,
+                ct.name as course_type,
+                cg.capacity
+            from courses c
+            join course_groups cg on cg.course_id = c.id
+            join course_types ct on ct.id = cg.course_type_id
+            order by c.course_name
+        """)
+    ).mappings().all()
+
+    courses = {"boys": {}, "girls": {}}
+
+    for row in rows:
+        gender = row["gender"]
+        course_name = row["course_name"]
+        course_type = row["course_type"]
+
+        if course_name not in courses[gender]:
+            courses[gender][course_name] = {}
+
+        courses[gender][course_name][course_type] = {
+            "capacity": row["capacity"]
+        }
+
+    return courses
 

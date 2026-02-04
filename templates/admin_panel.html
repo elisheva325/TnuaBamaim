@@ -73,7 +73,8 @@
                         <td>{{ course_name }}</td>
                         <td>{{ "קבוצה קטנה" if g_type=="small" else "קבוצה רגילה" }}</td>
                         <td>{{ info.capacity }}</td>
-                        <td>{{ info.age_range[0] }}–{{ info.age_range[1] }}</td>
+                        <td> {{ prices[g_type]['min_age'] }}–{{ prices[g_type]['max_age'] }}
+                        </td>
                         <td class="actions-cell">
                             <div class="capacity-area" onclick="event.stopPropagation();">
                                 <form method="POST" action="{{ url_for('update_capacity') }}" class="inline-form">

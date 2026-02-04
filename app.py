@@ -7,18 +7,31 @@ import io
 import requests
 from flask import Flask, render_template, request
 import json, os, smtplib
+from flask_sqlalchemy import SQLAlchemy
 from email.mime.text import MIMEText
 import re
 import uuid
 from typing import Dict
 from urllib.parse import parse_qs
 import requests
-from functions import *
 
 
 app = Flask(__name__)
 
 app.secret_key = "my_super_secret_key_12345" 
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    "postgresql://postgres.xjlhtghkdypuldvcutjd:yzQ-2rtM!Agjp?A@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy()          # ← בלי app כאן
+db.init_app(app)  
+print("DB ID FROM APP:", id(db))
+
+
+from functions import *
+
+
 
 @app.route("/privacy")
 def privacy_policy():
@@ -318,10 +331,21 @@ def admin_login():
 
 @app.route('/admin_dashboard')
 def admin_dashboard():
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
-    # כאן תכניסי את כל המידע שהמנהל יכול לראות
-    return admin_panel()
+    # if not session.get('admin_logged_in'):
+    #     return redirect(url_for('admin_login'))
+    # # כאן תכניסי את כל המידע שהמנהל יכול לראות
+    # return admin_panel()
+    courses = load_courses_from_db(db)
+    prices = load_prices_from_db(db)
+
+    registration_active = prices.get("registration_active", True)
+
+    return render_template(
+        "admin_panel.html",
+        courses=courses,
+        prices=prices,
+        registration_active=registration_active
+    )
 
 
 @app.route('/update_capacity', methods=['POST'])
@@ -801,5 +825,5 @@ def toggle_registration():
 #     flash("החיוב בוצע בהצלחה!", "success")
 #     return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True, use_reloader=False)
