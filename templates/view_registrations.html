@@ -38,18 +38,28 @@
                     <h3>הוספת נרשם</h3>
                     <form method="POST"
                         action="{{ url_for('add_registrant', gender=gender, course=course, group_type=group_type) }}">
-                        <label>שם ההורה:</label><br>
-                        <input type="text" name="parent_name" required><br>
-                        <label>שם משפחה:</label><br>
-                        <input type="text" name="parent_surname" required><br>
-                        <label>אימייל:</label><br>
-                        <input type="email" name="email" required><br>
-                        <label>טלפון:</label><br>
-                        <input type="text" name="phone" required><br>
-                        <label>שם הילד/ה:</label><br>
-                        <input type="text" name="child_name" required><br>
-                        <label>גיל:</label><br>
-                        <input type="number" name="child_age" min="1" required><br><br>
+                        <label>שם ההורה:</label>
+                        <input type="text" name="parent_name" required>
+                        <label>שם משפחה:</label>
+                        <input type="text" name="parent_surname" required>
+                        <label>אימייל:</label>
+                        <input type="email" name="email" required>
+                        <label>טלפון:</label>
+                        <input type="text" name="phone" required>
+                        <label>שם הילד/ה:</label>
+                        <input type="text" name="child_name" required>
+                        <label> תעודת זהות:</label>
+                        <input type="text" name="id_number" required>
+                        <label>גיל:</label>
+                        <input type="number" name="child_age" min="1" required>
+                        <label>קופת חולים:</label>
+                        <input type="text" name="insurance">
+
+                        <label>התחייבות:</label>
+                        <select name="commitments">
+                            <option value="false">לא</option>
+                            <option value="true">כן</option>
+                        </select>
                         <button type="submit" class="btn">הוסף</button>
                     </form>
                 </div>
@@ -68,7 +78,7 @@
                         <th>אימייל</th>
                         <th>קופת חולים</th>
                         <th>התחייבויות</th>
-                        <th>תשלום נוסף</th>
+                        <!-- <th>תשלום נוסף</th> -->
                         <th>פעולות</th>
                     </tr>
                     {% for r in registered_list %}
@@ -81,22 +91,27 @@
                         <td>{{ r.email }}</td>
                         <td>{{ r.insurance if r.insurance else "-" }}</td>
                         <td>
-                            {% if r.commitments and r.commitments != "-" %}
-                            {{ r.commitments }}
+                            {% if r.commitments is none %}
+                            -
+                            {% elif r.commitments %}
+                            כן
+                            {% else %}
+                            לא
+                            {% endif %}
                             <form method="POST" action="{{ url_for('toggle_commitment') }}" style="display:inline;">
-                                <input type="hidden" name="email" value="{{ r.email }}">
+                                <input type="hidden" name="registration_id" value="{{ r.id }}">
+
+                                <!-- <input type="hidden" name="email" value="{{ r.email }}">
                                 <input type="hidden" name="child_name" value="{{ r.child_name }}">
                                 <input type="hidden" name="course" value="{{ r.course }}">
                                 <input type="hidden" name="group_type" value="{{ r.group_type }}">
-                                <input type="hidden" name="gender" value="{{ gender }}">
+                                <input type="hidden" name="gender" value="{{ gender }}"> -->
                                 <button type="submit" class="toggle-btn">שנה</button>
                             </form>
-                            {% else %}
-                            -
-                            {% endif %}
+
                         </td>
                         <!-- <td>{{ r.commitments if r.commitments  else "-" }}</td> -->
-                        <td>
+                        <!-- <td>
                             {{ r.extra_payment if r.extra_payment else "-" }}
                             {% if r.card_token or (r.icount and r.icount.card_token) %}
                             <br>
@@ -105,15 +120,19 @@
                                 💳 חיוב חוזר
                             </button>
                             {% endif %}
-                        </td>
+                        </td> -->
                         <td>
                             <form method="POST" action="{{ url_for('cancel_registration') }}">
-                                <input type="hidden" name="email" value="{{ r.email }}">
+                                <input type="hidden" name="registration_id" value="{{ r.id }}">
+                                <input type="hidden" name="gender" value="{{ gender }}">
+                                <input type="hidden" name="course" value="{{ course }}">
+                                <input type="hidden" name="group_type" value="{{ group_type }}">
+                                <!-- <input type="hidden" name="email" value="{{ r.email }}">
                                 <input type="hidden" name="child_name" value="{{ r.child_name }}">
                                 <input type="hidden" name="course" value="{{ r.course }}">
                                 <input type="hidden" name="group_type" value="{{ r.group_type }}">
                                 <input type="hidden" name="list_type" value="registered">
-                                <input type="hidden" name="gender" value="{{ gender }}">
+                                <input type="hidden" name="gender" value="{{ gender }}"> -->
                                 <button type="submit" class="cancel-btn">❌ בטל</button>
                             </form>
                         </td>
@@ -169,42 +188,46 @@
 </body>
 
 <script>
-    function openChargeModal(email, childName, course, groupType) {
-        document.getElementById("chargeEmail").value = email;
-        document.getElementById("chargeChild").value = childName;
-        document.getElementById("chargeCourse").value = course;
-        document.getElementById("chargeGroup").value = groupType;
-        document.getElementById("chargeModal").style.display = "block";
-    }
+    // function openChargeModal(email, childName, course, groupType) {
+    //     document.getElementById("chargeEmail").value = email;
+    //     document.getElementById("chargeChild").value = childName;
+    //     document.getElementById("chargeCourse").value = course;
+    //     document.getElementById("chargeGroup").value = groupType;
+    //     document.getElementById("chargeModal").style.display = "block";
+    // }
 
-    document.getElementById("closeCharge").onclick = function () {
-        document.getElementById("chargeModal").style.display = "none";
-    };
-    window.onclick = function (event) {
-        if (event.target == document.getElementById("chargeModal")) {
-            document.getElementById("chargeModal").style.display = "none";
-        }
-    };
+    // document.getElementById("closeCharge").onclick = function () {
+    //     document.getElementById("chargeModal").style.display = "none";
+    // };
+    // window.onclick = function (event) {
+    //     if (event.target == document.getElementById("chargeModal")) {
+    //         document.getElementById("chargeModal").style.display = "none";
+    //     }
+    // };
 
-    var modal = document.getElementById("addModal");
-    var btn = document.getElementById("addBtn");
-    var span = document.getElementsByClassName("close")[0];
+    document.addEventListener("DOMContentLoaded", function () {
 
-    window.addEventListener("pageshow", function (event) {
-        if (event.persisted) {
-            if (document.referrer) {
-                window.location.href = document.referrer;
-            } else {
-                window.location.href = "/";
-            }
+        var modal = document.getElementById("addModal");
+        var btn = document.getElementById("addBtn");
+        var span = document.querySelector(".close");
+
+        if (btn && modal && span) {
+
+            btn.addEventListener("click", function () {
+                modal.style.display = "block";
+            });
+
+            span.addEventListener("click", function () {
+                modal.style.display = "none";
+            });
+
+            window.addEventListener("click", function (event) {
+                if (event.target === modal) {
+                    modal.style.display = "none";
+                }
+            });
         }
     });
-
-    btn.onclick = function () { modal.style.display = "block"; }
-    span.onclick = function () { modal.style.display = "none"; }
-    window.onclick = function (event) {
-        if (event.target == modal) { modal.style.display = "none"; }
-    }
 </script>
 
 </html>

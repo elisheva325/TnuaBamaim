@@ -1,25 +1,25 @@
-
-
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <title>רישום לקורס שחייה</title>
     <link href="https://fonts.googleapis.com/css2?family=Heebo&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <div class="container">
         <h2>רישום לקורס שחייה</h2>
         <!-- הודעה אם הרישום סגור -->
         {% if not registration_active %}
-        <div style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; border: 2px solid #f5c6cb;">
+        <div
+            style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; border: 2px solid #f5c6cb;">
             <h3>🛑 הרישום לקורסים סגור כרגע</h3>
             <p>נשמח לראותך בפעם הבאה שהרישום יפתח!</p>
         </div>
         {% endif %}
-        
+
         <!-- חלונית תשלום -->
         <div id="paymentModal" class="modal" style="display:none;">
             <div class="modal-content">
@@ -31,7 +31,7 @@
                 <label>
                     <input type="radio" name="payment_type" value="insurance"> תשלום דרך קופת חולים
                 </label>
-                
+
                 <div id="insuranceOptions" class="insurance-options" style="display:none; margin-top:10px;">
                     <label>
                         <input type="radio" name="insurance_type" value="מאוחדת"> מאוחדת
@@ -42,22 +42,24 @@
                         <div class="insurance-code">קוד התחייבות: 93015</div>
                     </label>
                     <label for="insurance_email" style="margin-top:10px;">
-                        יש לשלם דמי רישום על סך 100 ש"ח ובנוסף לשלוח התחייבויות למייל: tnuakurs@gmail.com , במידה ולא ישלחו כל ההתחייבויות ייגבה תשלום נוסף
+                        יש לשלם דמי רישום על סך 100 ש"ח ובנוסף לשלוח התחייבויות למייל: tnuakurs@gmail.com , במידה ולא
+                        ישלחו כל ההתחייבויות ייגבה תשלום נוסף
                     </label>
                 </div>
-                
+
                 <button id="payButton" class="btn-pay" style="margin-top:10px;">שלם</button>
             </div>
         </div>
         {% with messages = get_flashed_messages() %}
-{% if messages %}
-{% for msg in messages %}
-  <div class="message" style="color: {% if category == 'error' %}red{% else %}green{% endif %}; margin-bottom: 10px;">
-    {{ msg }}
-  </div>
-{% endfor %}
-{% endif %}
-{% endwith %}
+        {% if messages %}
+        {% for msg in messages %}
+        <div class="message"
+            style="color: {% if category == 'error' %}red{% else %}green{% endif %}; margin-bottom: 10px;">
+            {{ msg }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
 
         <!-- {% with messages = get_flashed_messages() %}
             {% if messages %}
@@ -70,64 +72,68 @@
 
         <form method="POST">
             <h4>יש לכתוב את כל הפרטים בעברית</h4>
-             <!-- הפיכת כל השדות ללא פעילים אם הרישום סגור -->
+            <!-- הפיכת כל השדות ללא פעילים אם הרישום סגור -->
             <fieldset {% if not registration_active %}disabled{% endif %}>
-            
-            <label for="parent_name">שם ההורה:</label>
-            <input type="text" name="parent_name" id="parent_name" required maxlength="50" pattern="[א-ת\s]+">
-            
-            <label for="parent_surname">שם משפחה:</label>
-            <input type="text" name="parent_surname" id="parent_surname" required maxlength="50" pattern="[א-ת\s]+">
-            
-            <label for="email">אימייל:</label>
-            <input type="email" name="email" id="email" required maxlength="50">
-            <div id="email_error" style="color:red; font-size:0.9em;"></div>
-            
-            <label for="phone">טלפון:</label>
-            <input type="tel" name="phone" id="phone" required>
-            <div id="phone_error" style="color:red; font-size:0.9em; margin-bottom:5px;"></div>
-            
-            <label for="child_name">שם הילד/ה:</label>
-            <input type="text" name="child_name" id="child_name" required maxlength="50" pattern="[א-ת\s]+">
-            
-            <label for="child_age"> גיל הילד/ה: (6-13)</label>
-            <input type="number" name="child_age" id="child_age" min="6" max="13" required>
-            
-            <label for="child_gender">בן/בת:</label>
-            <select name="child_gender" id="child_gender" required>
-                <option value="" disabled selected>בחר/י</option>
-                <option value="boys">בן</option>
-                <option value="girls">בת</option>
-            </select>
-            
-            <label for="course">בחירת קורס:</label>
-            <select name="course" id="course" required>
-                <option value="" disabled selected>בחר/י קורס</option>
-            </select>
-            
-            <label for="group_type">סוג קבוצה:</label>
-            <select name="group_type" id="group_type" required>
-                <option value="" disabled selected>בחר/י סוג קבוצה</option>
-            </select>
-          
-<!-- <div class="mb-3" style="margin-top: 15px;">
+
+                <label for="parent_name">שם ההורה:</label>
+                <input type="text" name="parent_name" id="parent_name" required maxlength="50" pattern="[א-ת\s]+">
+
+                <label for="parent_surname">שם משפחה:</label>
+                <input type="text" name="parent_surname" id="parent_surname" required maxlength="50" pattern="[א-ת\s]+">
+
+                <label for="email">אימייל:</label>
+                <input type="email" name="email" id="email" required maxlength="50">
+                <div id="email_error" style="color:red; font-size:0.9em;"></div>
+
+                <label for="phone">טלפון:</label>
+                <input type="tel" name="phone" id="phone" required>
+                <div id="phone_error" style="color:red; font-size:0.9em; margin-bottom:5px;"></div>
+
+                <label for="child_name">שם הילד/ה:</label>
+                <input type="text" name="child_name" id="child_name" required maxlength="50" pattern="[א-ת\s]+">
+
+                <label for="child_age"> גיל הילד/ה: (6-13)</label>
+                <input type="number" name="child_age" id="child_age" min="6" max="13" required>
+
+                <label for="id"> תעודת זהות של הילד</label>
+                <input type="text" name="id" id="id" maxlength="9" required>
+
+                <label for="child_gender">בן/בת:</label>
+                <select name="child_gender" id="child_gender" required>
+                    <option value="" disabled selected>בחר/י</option>
+                    <option value="boys">בן</option>
+                    <option value="girls">בת</option>
+                </select>
+
+                <label for="course">בחירת קורס:</label>
+                <select name="course" id="course" required>
+                    <option value="" disabled selected>בחר/י קורס</option>
+                </select>
+
+                <label for="group_type">סוג קבוצה:</label>
+                <select name="group_type" id="group_type" required>
+                    <option value="" disabled selected>בחר/י סוג קבוצה</option>
+                </select>
+
+                <!-- <div class="mb-3" style="margin-top: 15px;">
     <input type="checkbox" id="privacy" name="privacy" value="accepted" style="margin-right:8px;">
     <label for="privacy" style="display:inline;">
         אני מאשר/ת את <a href="/privacy-policy" target="_blank">מדיניות הפרטיות</a> של האתר
     </label>
 </div> -->
-<div class="mb-3 privacy-container">
-    <input type="checkbox" id="privacy" name="privacy" value="accepted">
-    <label for="privacy">
-        אני מאשר/ת את עיבוד הנתונים שלי בהתאם
-        <a href="{{ url_for('privacy_policy') }}" >למדיניות הפרטיות</a>
-    </label>
-</div>
-            
-            <!-- <button type="submit" class="btn-register">הרשמה</button> -->
-             <button type="submit" class="btn-register" {% if not registration_active %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
-                {% if not registration_active %}הרישום סגור{% else %}הרשמה{% endif %}
-            </button>
+                <div class="mb-3 privacy-container">
+                    <input type="checkbox" id="privacy" name="privacy" value="accepted">
+                    <label for="privacy">
+                        אני מאשר/ת את עיבוד הנתונים שלי בהתאם
+                        <a href="{{ url_for('privacy_policy') }}">למדיניות הפרטיות</a>
+                    </label>
+                </div>
+
+                <!-- <button type="submit" class="btn-register">הרשמה</button> -->
+                <button type="submit" class="btn-register" {% if not registration_active %}disabled
+                    style="opacity: 0.5; cursor: not-allowed;" {% endif %}>
+                    {% if not registration_active %}הרישום סגור{% else %}הרשמה{% endif %}
+                </button>
             </fieldset>
         </form>
     </div>
@@ -136,7 +142,7 @@
         const allCourses = {{ courses | tojson | safe }};
         const courseStatus = {{ course_status | tojson | safe }};
         const prices = {{ prices | tojson | safe }};
-        
+
         const genderSelect = document.getElementById("child_gender");
         const courseSelect = document.getElementById("course");
         const submitButton = document.querySelector("button[type='submit']");
@@ -284,7 +290,7 @@
             const selectedCourse = courseSelect.value;
 
             groupSelect.innerHTML = '<option value="" disabled selected>בחר/י סוג קבוצה</option>';
-            
+
             if (isNaN(age)) return;
 
             if (age >= 6 && age <= 10 && allCourses[gender][selectedCourse]["small"].capacity > 0) {
@@ -298,7 +304,7 @@
         function addOption(value, text) {
             const selectedCourse = courseSelect.value;
             let displayText = text;
-            
+
             if (prices[value]) {
                 const monthlyPrice = prices[value];
                 displayText += ` (${monthlyPrice}* ${prices.months} חודשים)`;
@@ -320,13 +326,13 @@
         function updateCourses() {
             const gender = genderSelect.value;
             courseSelect.innerHTML = '<option value="" disabled selected>בחר/י קורס</option>';
-            
+
             if (!gender || !allCourses[gender]) return;
 
             for (const [courseName, course] of Object.entries(allCourses[gender])) {
                 const smallCap = course.small?.capacity || 0;
                 const regularCap = course.regular?.capacity || 0;
-                
+
                 if (smallCap > 0 || regularCap > 0) {
                     const option = document.createElement("option");
                     option.value = courseName;
@@ -340,11 +346,11 @@
         function updateButton() {
             const selectedCourse = courseSelect.value;
             const selectedGroup = groupSelect.value;
-            
+
             if (!selectedCourse || !selectedGroup) return;
 
             const hasPlace = courseStatus[selectedCourse]?.[selectedGroup];
-            
+
             if (hasPlace) {
                 submitButton.textContent = "הרשמה";
                 submitButton.className = "btn-register";
@@ -385,19 +391,19 @@
                 alert("חובה לאשר את מדיניות הפרטיות כדי להמשיך בהרשמה");
                 e.preventDefault(); // עוצר את ההמשך
                 return;
-    }
+            }
             const selectedCourse = courseSelect.value;
             const selectedGroup = groupSelect.value;
             const hasPlace = courseStatus[selectedCourse]?.[selectedGroup];
 
             if (hasPlace) {
                 e.preventDefault(); // מונע שליחת הטופס הרגילה
-                
+
                 // בדיקת כל השדות לפני פתיחת חלונית התשלום
                 if (!validateAllFields()) {
                     return; // אם יש שגיאות, לא פותחים את החלונית
                 }
-                
+
                 // איפוס הבחירות
                 paymentRadios.forEach(r => r.checked = false);
                 const insuranceRadios = document.getElementsByName("insurance_type");
@@ -430,7 +436,7 @@
 
         // שליחת הנתונים לשרת כמו submit רגיל
         payButton.addEventListener("click", () => {
-            
+
 
 
 
@@ -542,4 +548,5 @@
         });
     </script>
 </body>
+
 </html>
