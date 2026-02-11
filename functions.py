@@ -118,60 +118,8 @@ def send_email(subject, body):
     except Exception as e:
         print(f"שגיאה בשליחת מייל: {e}")
 
-def finalize_registration_from_pending(db, entry):
 
-    # בדיקה אם כבר הוכנס
-    existing = db.session.execute(
-        db.text("""
-            select id
-            from registrations
-            where order_ref = :order_ref
-        """),
-        {"order_ref": entry["order_ref"]}
-    ).first()
-
-    if existing:
-        return False  # כבר הוכנס בעבר
-
-    db.session.execute(
-        db.text("""
-            insert into registrations (
-                course_group_id,
-                parent_first_name,
-                parent_last_name,
-                email,
-                phone,
-                child_first_name,
-                child_age,
-                child_gender,
-                status,
-                insurance,
-                commitments,
-                order_ref,
-                payment_status
-            )
-            values (
-                :course_group_id,
-                :parent_first_name,
-                :parent_last_name,
-                :email,
-                :phone,
-                :child_first_name,
-                :child_age,
-                :child_gender,
-                :status,
-                :insurance,
-                :commitments,
-                :order_ref,
-                'שולם'
-            )
-        """),
-        entry
-    )
-
-    db.session.commit()
-    return True
-
+# חדש
 def calculate_course_status(db):
 
     rows = db.session.execute(
@@ -203,6 +151,8 @@ def calculate_course_status(db):
         result[course_name][group_type] = registered_count < capacity
 
     return result
+
+# חדש
 def get_course_group(db, gender, course_name, group_type):
     return db.session.execute(
         db.text("""
@@ -224,7 +174,6 @@ def get_course_group(db, gender, course_name, group_type):
             "group_type": group_type
         }
     ).mappings().first()
-
 
 
 # חדש

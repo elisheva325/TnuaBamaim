@@ -15,6 +15,7 @@ from typing import Dict
 from urllib.parse import parse_qs
 import requests
 from dotenv import load_dotenv
+from decimal import Decimal
 load_dotenv()
 app = Flask(__name__)
 
@@ -31,123 +32,96 @@ print("DB ID FROM APP:", id(db))
 
 from functions import *
 
-
-
 @app.route("/privacy")
 def privacy_policy():
     return render_template("privacy.html")
 
 # @app.route('/', methods=['GET','POST'])
 # def register():
-#     data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
-#     data.setdefault('registered', [])
-#     data.setdefault('waiting_list', [])
-#     courses = load_json(COURSES_FILE, {"boys": {}, "girls": {}})
 
-#     prices = load_json('prices.json', {"small": 350, "regular": 280, "months": 5, "registration_active": True})
-    
-#     if 'registration_active' not in prices:
-#         prices['registration_active'] = True
-#         save_json('prices.json', prices)
-    
-#     registration_active = prices.get('registration_active', True)
-    
-#     error_msg = None
-#     success_msg = None
-#     course_status = {}
-    
+#     active = load_json('prices.json', { "registration_active": True})
+
+#     registration_active = active.get("registration_active", True )
+#     prices = load_prices_from_db(db)
+
+#     if not prices:
+#         flash("שגיאה בטעינת מחירים.", "error")
+#         return redirect(url_for('register'))
 #     if request.method == 'POST':
 
 #         if not registration_active:
-#             error_msg = "הרישום לקורסים סגור כרגע. נשמח לראותך בפעם הבאה!"
-#             flash(error_msg, 'error')
-#             return redirect(url_for('register'))
-#         if request.form.get('privacy') != 'accepted':
-#             flash("חובה לאשר את מדיניות הפרטיות", "error")
+#             flash("הרישום סגור כרגע.", "error")
 #             return redirect(url_for('register'))
 
-#         parent_name = request.form.get('parent_name', '').strip()
-#         parent_surname = request.form.get('parent_surname', '').strip()
-#         email = request.form.get('email', '').strip()
-#         phone = request.form.get('phone', '').strip()
-#         child_name = request.form.get('child_name', '').strip()
-#         child_age_str = request.form.get('child_age', '').strip()
-#         child_gender = request.form.get('child_gender', '').strip()
-#         course = request.form.get('course', '').strip()
-#         group_type = request.form.get('group_type', '').strip()
-        
-#         if not all([parent_name, parent_surname, email, phone, child_name, child_age_str, child_gender, course, group_type]):
-#             error_msg = "אנא מלא/י את כל השדות החובה."
-#             flash(error_msg, 'error')
+#         if request.form.get('privacy') != 'accepted':
+#             flash("יש לאשר מדיניות פרטיות.", "error")
 #             return redirect(url_for('register'))
-        
-#         # בדיקת גיל תקין
+
+#         parent_name = request.form.get('parent_name','').strip()
+#         parent_surname = request.form.get('parent_surname','').strip()
+#         email = request.form.get('email','').strip()
+#         phone = request.form.get('phone','').strip()
+#         child_name = request.form.get('child_name','').strip()
+#         child_age_str = request.form.get('child_age','').strip()
+#         child_gender = request.form.get('child_gender','').strip()
+#         course = request.form.get('course','').strip()
+#         group_type = request.form.get('group_type','').strip()
+#         id=request.form.get('id','').strip()
+
+#         if not all([parent_name, parent_surname, email, phone, child_name, child_age_str, child_gender, course, group_type]):
+#             flash("יש למלא את כל השדות.", "error")
+#             return redirect(url_for('register'))
+
 #         try:
 #             child_age = int(child_age_str)
-#             if child_age < 6 or child_age > 13:
-#                 error_msg = "גיל הילד/ה חייב להיות בין 6 ל-13."
-#                 flash(error_msg, 'error')
-#                 return redirect(url_for('register'))
-#         except (ValueError, TypeError):
-#             error_msg = "אנא הכנס גיל תקין במספרים."
-#             flash(error_msg, 'error')
+#         except:
+#             flash("יש להזין גיל במספרים בלבד.", "error")
 #             return redirect(url_for('register'))
-        
-#         # בדיקות פורמט - טלפון
-#         phone_pattern = re.compile(r'^(?:\+972|0)(?:5\d\d{7}|[23489]\d{7})$')
-#         if not phone_pattern.match(phone):
-#             error_msg = "מספר טלפון לא חוקי. אנא הכנס מספר תקין, לדוגמה נייד 0521234567 או קו בית 03-1234567"
-#             flash(error_msg, 'error')
+
+#         group = get_course_group(db, child_gender, course, group_type)
+
+#         if not group:
+#             flash("בחירת הקורס אינה תקינה.", "error")
 #             return redirect(url_for('register'))
-        
-#         # בדיקת אימייל
-#         if not validate_email(email):
-#             error_msg = "האימייל אינו חוקי. יש להכניס כתובת אימייל תקינה."
-#             flash(error_msg, 'error')
+
+#         if not (group["min_age"] <= child_age <= group["max_age"]):
+#             flash(f"הגיל אינו מתאים (טווח {group['min_age']}-{group['max_age']}).", "error")
 #             return redirect(url_for('register'))
+
+#         current_count = db.session.execute(
+#             db.text("""
+#                 select count(*)
+#                 from registrations
+#                 where course_group_id = :gid
+#                   and status = 'registered'
+#             """),
+#             {"gid": group["id"]}
+#         ).scalar()
+
+#         is_full = current_count >= group["capacity"]
+
+#         payment_type = request.form.get("payment_type")
         
-#         # בדיקת שמות בעברית
-#         if not validate_name(parent_name):
-#             error_msg = "שם ההורה אינו חוקי. יש להשתמש רק באותיות בעברית."
-#             flash(error_msg, 'error')
+#         if not payment_type and not is_full:
+#             flash("לא נבחר סוג תשלום.", "error")
 #             return redirect(url_for('register'))
-        
-#         if not validate_name(parent_surname):
-#             error_msg = "שם המשפחה אינו חוקי. יש להשתמש רק באותיות בעברית."
-#             flash(error_msg, 'error')
-#             return redirect(url_for('register'))
-        
-#         if not validate_name(child_name):
-#             error_msg = "שם הילד/ה אינו חוקי. יש להשתמש רק באותיות בעברית."
-#             flash(error_msg, 'error')
-#             return redirect(url_for('register'))
-        
-#         # בדיקה שהקורס והקבוצה קיימים
-#         if child_gender not in courses or course not in courses[child_gender] or group_type not in courses[child_gender][course]:
-#             error_msg = "בחירת הקורס או הקבוצה אינה תקינה."
-#             flash(error_msg, 'error')
-#             return redirect(url_for('register'))
-        
-#         # בדיקת גיל מתאים לקבוצה
-#         age_range = courses[child_gender][course][group_type]["age_range"]
-#         if not (age_range[0] <= child_age <= age_range[1]):
-#             error_msg = f"הגיל של הילד/ה לא מתאים ל{ 'קבוצה קטנה' if group_type == 'small' else 'קבוצה רגילה' } (טווח גילאים: {age_range[0]}-{age_range[1]})."
-#             flash(error_msg, 'error')
-#             return redirect(url_for('register'))
-        
-#         # אם הגענו עד לכאן - כל הבדיקות הבסיסיות עברו בהצלחה!
-#         # עכשיו נבדוק אם יש מקום בקורס ונטפל בתשלום
-        
-#         # חישוב אם הקורס מלא
-#         max_spots = courses[child_gender][course][group_type]["capacity"]
-#         current_count = sum(
-#             1 for r in data['registered'] 
-#             if r['course'] == course and r['group_type'] == group_type
-#         )
-#         is_full = current_count >= max_spots
-        
-#         # יצירת רשומה בסיסית
-#         entry = {
+
+#         if payment_type == "insurance":
+#             amount_to_pay = 100
+#         else:
+#             if group_type == "small":
+#                 base = prices["small"]
+#             else:
+#                 base = prices["regular"]
+
+#             months = prices.get("months", 1)
+#             amount_to_pay = base * months
+
+#         order_ref = str(uuid.uuid4())
+#         pending_entry = {
+         
+#             "course": course,           # חסר! פונקציית add_registrant_db חייבת את זה
+#             "group_type": group_type,
 #             "parent_name": parent_name,
 #             "parent_surname": parent_surname,
 #             "email": email,
@@ -155,53 +129,47 @@ def privacy_policy():
 #             "child_name": child_name,
 #             "child_age": child_age,
 #             "child_gender": child_gender,
-#             "course": course,
-#             "group_type": group_type
+#             "id_number": id,
+#             "order_ref": order_ref,
 #         }
-        
-#         # טיפול בתשלום - רק אם יש מקום בקורס
-#         if not is_full:
-#             # בדיקה שקיבלנו פרטי תשלום (זה אומר שהמשתמש עבר דרך חלונית התשלום)
-#             payment_type = request.form.get("payment_type")
-            
-#             if not payment_type:
-#                 error_msg = "שגיאה: לא נבחר סוג תשלום. אנא נסה שוב."
-#                 flash(error_msg, 'error')
-#                 return redirect(url_for('register'))
-            
-#             # טיפול בתשלום דרך ביטוח
-#             if payment_type == "insurance":
-#                 insurance = request.form.get("insurance")
-#                 if not insurance:
-#                     error_msg = "שגיאה: לא נבחרה קופת חולים. אנא בחר קופת חולים."
-#                     flash(error_msg, 'error')
-#                     return redirect(url_for('register'))
-                
-#                 commitments = "לא"  # ברירת מחדל
-#                 entry["insurance"] = insurance
-#                 entry["commitments"] = commitments
-            
-#             # חישוב סכום לתשלום
-#             prices = load_json('prices.json', {"small": 350, "regular": 280, "months": 5})
-            
-#             if payment_type == "insurance":
-#                 amount_to_pay = 100
-#             else:
-#                 if group_type == "small":
-#                     amount_to_pay = prices["small"] * prices.get("months", 1)
-#                 else:
-#                     amount_to_pay = prices["regular"] * prices.get("months", 1)
-            
-            
-#             order_ref = str(uuid.uuid4())
-#             entry["order_ref"] = order_ref
-#             entry["amount_to_pay"] = amount_to_pay
 
-#             pending = load_pending()
-#             pending[order_ref] = entry
-#             save_pending(pending)
+#         # session["pending_entry"] = pending_entry
 
-#             session["pending_entry"] = entry
+
+#         if is_full:
+#             # אין תשלום לרשימת המתנה
+#             send_email(
+#                 f"רשימת המתנה - קורס {course}",
+#                 f"""
+#                 שם ההורה: {parent_name} {parent_surname}
+#                 טלפון: {phone}
+#                 אימייל: {email}
+#                 שם הילד/ה: {child_name}
+#                 גיל: {child_age}
+#                 קורס: {course}
+#                 קבוצה: {"קבוצה קטנה" if group_type=="small" else "קבוצה רגילה"}
+#                 """
+#             )
+
+#             flash("הקורס מלא. נרשמת לרשימת המתנה.", "success")
+
+#             # הכנסת רשימת המתנה תתבצע ב-success ראוט
+#             return redirect(url_for('register'))
+
+#         else:
+#             # רישום רגיל – ממשיכים לתשלום
+#             # send_email(
+#             #     f"התחלת רישום לקורס {course}",
+#             #     f"""
+#             #     שם ההורה: {parent_name} {parent_surname}
+#             #     טלפון: {phone}
+#             #     אימייל: {email}
+#             #     שם הילד/ה: {child_name}
+#             #     סכום לתשלום: {amount_to_pay} ש"ח
+#             #     """
+#             # )
+            
+
 #             if payment_type == "insurance":
 #                 ICOUNT_CHECKOUT_URL=os.getenv("ICOUNT_CHECKOUT_URL", "https://app.icount.co.il/m/62b62/cd16ap6au6956c4ee7e?utm_source=iCount&utm_medium=paypage&utm_campaign=106")
 #             elif group_type == "small":           
@@ -210,95 +178,48 @@ def privacy_policy():
 #                 ICOUNT_CHECKOUT_URL = os.getenv("ICOUNT_CHECKOUT_URL", "https://app.icount.co.il/m/6e4a9/cd16ap65u6956c51a18?utm_source=iCount&utm_medium=paypage&utm_campaign=101")
 #             checkout_url = f"{ICOUNT_CHECKOUT_URL}?more={order_ref}"
 
+#             pending = load_json("pending.json", {})
+#             pending[order_ref] = pending_entry
+#             save_json("pending.json", pending)
+
 #             return redirect(checkout_url)
 
-            
-#             # הוספה לרשימת הרשומים
-#             data['registered'].append(entry)
-#             success_msg = f"ההרשמה שלך לקורס '{course}' ({ 'קבוצה קטנה' if group_type == 'small' else 'קבוצה רגילה' } ) התקבלה בהצלחה!"
-            
-#             # הכנת תוכן האימייל
-#             email_body = f"""
-# שם ההורה: {entry['parent_name']} {entry['parent_surname']}
-# אימייל: {entry['email']}
-# טלפון: {entry['phone']}
-# שם הילד/ה: {entry['child_name']}
-# גיל: {entry['child_age']}
-# מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
-# קורס: {entry['course']}
-# קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
-# סכום לתשלום: {entry['amount_to_pay']} ש"ח
-# """
-            
-#             # אם יש שדות נוספים כמו ביטוח/התחייבות – נוסיף
-#             if "insurance" in entry:
-#                 email_body += f"\nקופת חולים: {entry['insurance']}"
-#                 email_body += f"\nהתחייבויות: {entry.get('commitments','לא')}"
-            
-#             send_email(f"רישום חדש לקורס {course}", email_body)
-            
-#         else:
-#             # הקורס מלא - הוספה לרשימת המתנה
-#             # כאן לא צריך פרטי תשלום כי זה רק רשימת המתנה
-#             data['waiting_list'].append(entry)
-#             success_msg = f"הקורס מלא, נרשמת בהצלחה לרשימת המתנה לקורס '{course}' ({ 'קבוצה קטנה' if group_type == 'small' else 'קבוצה רגילה' } )."
-            
-#             # הכנת תוכן האימייל לרשימת המתנה
-#             email_body = f"""
-# שם ההורה: {entry['parent_name']} {entry['parent_surname']}
-# אימייל: {entry['email']}
-# טלפון: {entry['phone']}
-# שם הילד/ה: {entry['child_name']}
-# גיל: {entry['child_age']}
-# מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
-# קורס: {entry['course']}
-# קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
-# """
-            
-#             send_email(f"רשימת המתנה - קורס {course}", email_body)
-        
-#         # שמירה לקובץ
-#         save_json(REGISTRATIONS_FILE, data)
-        
-#         # הודעת הצלחה והפנייה
-#         flash(success_msg, 'success')
-#         return redirect(url_for('register'))
-    
-#     # עדכון סטטוס קורסים עבור JS (רק ב-GET או אחרי טיפול בשגיאות)
-#     for gender, gender_courses in courses.items():
-#         for course_name, groups in gender_courses.items():
-#             course_status[course_name] = {}
-#             for g_type, info in groups.items():
-#                 if info["capacity"] == 0:
-#                     course_status[course_name][g_type] = False
-#                 else:
-#                     count = sum(
-#                         1 for r in data['registered'] 
-#                         if r['course'] == course_name and r['group_type'] == g_type
-#                     )
-#                     course_status[course_name][g_type] = count < info["capacity"]
-    
-#     prices = load_json('prices.json',{"small": 350, "regular": 280 ,"months": 5})
+#             # if payment_type == "insurance":
+#             #     checkout_url = os.getenv("ICOUNT_INSURANCE_URL")
+#             # elif group_type == "small":
+#             #     checkout_url = os.getenv("ICOUNT_SMALL_URL")
+#             # else:
+#             #     checkout_url = os.getenv("ICOUNT_REGULAR_URL")
+           
+#             # print("FINAL CHECKOUT URL:", f"{checkout_url}?more={order_ref}")
+#             # return redirect(f"{checkout_url}?more={order_ref}")
+
+#     # GET
+#     courses = load_courses_from_db(db)
+#     course_status = calculate_course_status(db)
+
 #     return render_template(
-#         'register.html',
-#          registration_active=registration_active,
+#         "register.html",
+#         registration_active=registration_active,
 #         courses=courses,
 #         course_status=course_status,
 #         prices=prices
 #     )
+
 @app.route('/', methods=['GET','POST'])
 def register():
-
     active = load_json('prices.json', { "registration_active": True})
-
     registration_active = active.get("registration_active", True )
-    prices = load_prices_from_db(db)
-
-    if not prices:
+    
+    raw_prices = load_prices_from_db(db)
+    if not raw_prices:
         flash("שגיאה בטעינת מחירים.", "error")
         return redirect(url_for('register'))
-    if request.method == 'POST':
+    
+    # המרה ל-float רק בשביל ה-JS (כדי למנוע את שגיאת ה-Decimal)
+    prices = {k: float(v) if isinstance(v, Decimal) else v for k, v in raw_prices.items()}
 
+    if request.method == 'POST':
         if not registration_active:
             flash("הרישום סגור כרגע.", "error")
             return redirect(url_for('register'))
@@ -307,6 +228,7 @@ def register():
             flash("יש לאשר מדיניות פרטיות.", "error")
             return redirect(url_for('register'))
 
+        # שליפת הנתונים שלך
         parent_name = request.form.get('parent_name','').strip()
         parent_surname = request.form.get('parent_surname','').strip()
         email = request.form.get('email','').strip()
@@ -316,61 +238,56 @@ def register():
         child_gender = request.form.get('child_gender','').strip()
         course = request.form.get('course','').strip()
         group_type = request.form.get('group_type','').strip()
-        id=request.form.get('id','').strip()
+        id_val = request.form.get('id','').strip()
 
         if not all([parent_name, parent_surname, email, phone, child_name, child_age_str, child_gender, course, group_type]):
             flash("יש למלא את כל השדות.", "error")
             return redirect(url_for('register'))
-
         try:
             child_age = int(child_age_str)
+            group = get_course_group(db, child_gender, course, group_type)
+            print(f"--- DEBUG REGISTRATION ---")
+            print(f"Gender from form: {child_gender}")
+            print(f"Course: {course}, Group Type: {group_type}")
+            print(f"Age entered: {child_age}")
+            print(f"Group found in DB: {group}") # אם זה None, פה הבעיה
+            if group:
+                print(f"DB Limits: {group['min_age']} to {group['max_age']}")
+            print(f"---------------------------")
+            if not group or not (group["min_age"] <= child_age <= group["max_age"]):
+                flash("הגיל אינו מתאים לקבוצה.", "error")
+                return redirect(url_for('register'))
         except:
-            flash("יש להזין גיל במספרים בלבד.", "error")
+            flash("נתוני גיל או קבוצה לא תקינים.", "error")
             return redirect(url_for('register'))
 
-        group = get_course_group(db, child_gender, course, group_type)
+        # try:
+        #     child_age = int(child_age_str)
+        # except:
+        #     flash("יש להזין גיל במספרים בלבד.", "error")
+        #     return redirect(url_for('register'))
 
-        if not group:
-            flash("בחירת הקורס אינה תקינה.", "error")
-            return redirect(url_for('register'))
+        # group = get_course_group(db, child_gender, course, group_type)
+        # if not group:
+        #     flash("בחירת הקורס אינה תקינה.", "error")
+        #     return redirect(url_for('register'))
 
-        if not (group["min_age"] <= child_age <= group["max_age"]):
-            flash(f"הגיל אינו מתאים (טווח {group['min_age']}-{group['max_age']}).", "error")
-            return redirect(url_for('register'))
+        # if not (group["min_age"] <= child_age <= group["max_age"]):
+        #     flash(f"הגיל אינו מתאים (טווח {group['min_age']}-{group['max_age']}).", "error")
+        #     return redirect(url_for('register'))
 
+        # בדיקת תפוסה
         current_count = db.session.execute(
-            db.text("""
-                select count(*)
-                from registrations
-                where course_group_id = :gid
-                  and status = 'registered'
-            """),
+            db.text("select count(*) from registrations where course_group_id = :gid and status = 'registered'"),
             {"gid": group["id"]}
         ).scalar()
 
         is_full = current_count >= group["capacity"]
-
-        payment_type = request.form.get("payment_type")
-        
-        if not payment_type and not is_full:
-            flash("לא נבחר סוג תשלום.", "error")
-            return redirect(url_for('register'))
-
-        if payment_type == "insurance":
-            amount_to_pay = 100
-        else:
-            if group_type == "small":
-                base = prices["small"]
-            else:
-                base = prices["regular"]
-
-            months = prices.get("months", 1)
-            amount_to_pay = base * months
-
         order_ref = str(uuid.uuid4())
+
+        # בניית ה-Entry
         pending_entry = {
-         
-            "course": course,           # חסר! פונקציית add_registrant_db חייבת את זה
+            "course": course,
             "group_type": group_type,
             "parent_name": parent_name,
             "parent_surname": parent_surname,
@@ -379,84 +296,61 @@ def register():
             "child_name": child_name,
             "child_age": child_age,
             "child_gender": child_gender,
-            "id_number": id,
+            "id_number": id_val,
             "order_ref": order_ref,
         }
 
-        # session["pending_entry"] = pending_entry
-
-
+        # --- התיקון: רישום לרשימת המתנה ---
         if is_full:
-            # אין תשלום לרשימת המתנה
-            send_email(
-                f"רשימת המתנה - קורס {course}",
-                f"""
-                שם ההורה: {parent_name} {parent_surname}
-                טלפון: {phone}
-                אימייל: {email}
-                שם הילד/ה: {child_name}
-                גיל: {child_age}
-                קורס: {course}
-                קבוצה: {"קבוצה קטנה" if group_type=="small" else "קבוצה רגילה"}
-                """
+            # כאן אנחנו קוראים לפונקציה שלך שמעדכנת את ה-DB בסטטוס 'waiting'
+            add_registrant_db(
+                db=db,
+                gender=child_gender,
+                course_name=course,
+                group_type=group_type,
+                parent_name=parent_name,
+                parent_surname=parent_surname,
+                email=email,
+                phone=phone,
+                child_name=child_name,
+                child_age=child_age,
+                id_number=id_val,
+                insurance="", # אין ביטוח ברשימת המתנה
+                commitments=False
             )
-
-            flash("הקורס מלא. נרשמת לרשימת המתנה.", "success")
-
-            # הכנסת רשימת המתנה תתבצע ב-success ראוט
+            
+            send_email(f"רשימת המתנה - קורס {course}", f"הילד {child_name} נוסף לרשימת המתנה.")
+            flash("הקורס מלא. נרשמת בהצלחה לרשימת המתנה.", "success")
             return redirect(url_for('register'))
 
         else:
-            # רישום רגיל – ממשיכים לתשלום
-            # send_email(
-            #     f"התחלת רישום לקורס {course}",
-            #     f"""
-            #     שם ההורה: {parent_name} {parent_surname}
-            #     טלפון: {phone}
-            #     אימייל: {email}
-            #     שם הילד/ה: {child_name}
-            #     סכום לתשלום: {amount_to_pay} ש"ח
-            #     """
-            # )
-            
+            # מקרה של רישום רגיל - יציאה לתשלום
+            payment_type = request.form.get("payment_type")
+            if not payment_type:
+                flash("לא נבחר סוג תשלום.", "error")
+                return redirect(url_for('register'))
 
+            # הקישורים המקוריים שלך
             if payment_type == "insurance":
-                ICOUNT_CHECKOUT_URL=os.getenv("ICOUNT_CHECKOUT_URL", "https://app.icount.co.il/m/62b62/cd16ap6au6956c4ee7e?utm_source=iCount&utm_medium=paypage&utm_campaign=106")
+                ICOUNT_URL = "https://app.icount.co.il/m/62b62/cd16ap6au6956c4ee7e?utm_source=iCount&utm_medium=paypage&utm_campaign=106"
             elif group_type == "small":           
-                ICOUNT_CHECKOUT_URL = os.getenv("ICOUNT_CHECKOUT_URL", "https://app.icount.co.il/m/8eb31/cd16ap5du68f109677e?utm_source=iCount&utm_medium=paypage&utm_campaign=93")
+                ICOUNT_URL = "https://app.icount.co.il/m/8eb31/cd16ap5du68f109677e?utm_source=iCount&utm_medium=paypage&utm_campaign=93"
             else:
-                ICOUNT_CHECKOUT_URL = os.getenv("ICOUNT_CHECKOUT_URL", "https://app.icount.co.il/m/6e4a9/cd16ap65u6956c51a18?utm_source=iCount&utm_medium=paypage&utm_campaign=101")
-            checkout_url = f"{ICOUNT_CHECKOUT_URL}?more={order_ref}"
-
+                ICOUNT_URL = "https://app.icount.co.il/m/6e4a9/cd16ap65u6956c51a18?utm_source=iCount&utm_medium=paypage&utm_campaign=101"
+            
+            # שמירה ל-pending.json לפני היציאה
             pending = load_json("pending.json", {})
             pending[order_ref] = pending_entry
             save_json("pending.json", pending)
 
-            return redirect(checkout_url)
-
-            # if payment_type == "insurance":
-            #     checkout_url = os.getenv("ICOUNT_INSURANCE_URL")
-            # elif group_type == "small":
-            #     checkout_url = os.getenv("ICOUNT_SMALL_URL")
-            # else:
-            #     checkout_url = os.getenv("ICOUNT_REGULAR_URL")
-           
-            # print("FINAL CHECKOUT URL:", f"{checkout_url}?more={order_ref}")
-            # return redirect(f"{checkout_url}?more={order_ref}")
+            # חזרה לפורמט המקורי שלך
+            return redirect(f"{ICOUNT_URL}?more={order_ref}")
 
     # GET
     courses = load_courses_from_db(db)
     course_status = calculate_course_status(db)
-
-    return render_template(
-        "register.html",
-        registration_active=registration_active,
-        courses=courses,
-        course_status=course_status,
-        prices=prices
-    )
-
-
+    return render_template('register.html', registration_active=registration_active, 
+                           courses=courses, course_status=course_status, prices=prices)
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     error_msg = None
@@ -589,56 +483,7 @@ def _extract_more_from_utm(val: str):
         return m
     return None
 
-
-# @app.route("/payment_success", methods=["GET", "POST"], strict_slashes=False)
-# def payment_success():
-#     try:
-#         print("ICOUNT IPN RECEIVED:", dict(request.values))
-
-#         order_ref = (
-#             request.values.get("more")
-#             or request.values.get("reference")
-#             or _extract_more_from_utm(request.values.get("utm_campaign"))
-#         )
-
-#         if not order_ref:
-#             return "missing reference", 400
-
-#         pending = load_pending()
-#         entry = pending.pop(order_ref, None)
-#         save_pending(pending)
-
-#         if not entry:
-#             return "not found", 200   # חשוב לא להחזיר שגיאה
-
-#         entry["payment_status"] = "שולם"
-
-#         data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
-#         data["registered"].append(entry)
-#         save_json(REGISTRATIONS_FILE, data)
-
-#         email_body = f"""
-#     שם ההורה: {entry['parent_name']} {entry['parent_surname']}
-#     אימייל: {entry['email']}
-#     טלפון: {entry['phone']}
-#     שם הילד/ה: {entry['child_name']}
-#     גיל: {entry['child_age']}
-#     מגדר: {"בן" if entry['child_gender']=="boys" else "בת"}
-#     קורס: {entry['course']}
-#     קבוצה: {"קבוצה קטנה" if entry['group_type']=="small" else "קבוצה רגילה"}
-#     סכום לתשלום: {entry['amount_to_pay']} ש"ח
-#     """
-#         if "insurance" in entry:
-#             email_body += f"\nקופת חולים: {entry['insurance']}"
-#             email_body += f"\nהתחייבויות: {entry.get('commitments','לא')}"
-
-#         send_email("רישום חדש לקורס", email_body)
-
-#         return "OK", 200
-#     except Exception as e:
-#         print("PAYMENT_SUCCESS ERROR:", e)
-#         return "server error", 500
-
+# לדש
 @app.route("/payment_success", methods=["GET", "POST"], strict_slashes=False)
 def payment_success():
     try:
@@ -957,69 +802,6 @@ def toggle_registration():
         flash('הרישום הופסק בהצלחה. משתמשים לא יכולים להירשם כרגע.', 'success')
     
     return redirect(url_for('admin_dashboard'))
-
-
-# @app.route('/charge_token', methods=['POST'])
-# def charge_token():
-#     if not session.get("admin_logged_in"):
-#         return redirect(url_for("admin_login"))
-
-#     email = request.form.get("email")
-#     child_name = request.form.get("child_name")
-#     course = request.form.get("course")
-#     group_type = request.form.get("group_type")
-#     gender = request.form.get("gender")
-#     amount = float(request.form.get("amount"))
-#     description = request.form.get("description") or "תשלום נוסף"
-
-#     data = load_json(REGISTRATIONS_FILE, {"registered": [], "waiting_list": []})
-#     registrant = next((r for r in data["registered"]
-#                        if r["email"] == email and r["child_name"] == child_name and
-#                           r["course"] == course and r["group_type"] == group_type), None)
-
-#     if not registrant:
-#         flash("לא נמצאה הרשומה לתשלום חוזר", "error")
-#         return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
-
-#     token = (registrant.get("icount", {}) or {}).get("card_token") or registrant.get("card_token")
-#     if not token:
-#         flash("לא נמצא טוקן שמור לכרטיס האשראי", "error")
-#         return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
-
-#     payload = {
-#         "cid": ICOUNT_CID,
-#         "user": ICOUNT_USER,
-#         "pass": ICOUNT_PASS,
-#         "cc_token": token,
-#         "sum": amount,
-#         "currency_code": "ILS",
-#         "description": description,
-#         "doctype": "receipt",
-#         "email_client": 0
-#     }
-
-#     try:
-#         res = requests.post("https://api.icount.co.il/api/v3.php/pay/bytoken", data=payload, timeout=20)
-#         response_data = res.json()
-#         if not response_data.get("status"):
-#             flash(f"שגיאה בחיוב: {response_data.get('error_description', 'לא ידועה')}", "error")
-#             return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
-#     except Exception as e:
-#         flash(f"שגיאה בחיבור ל-iCount: {str(e)}", "error")
-#         return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
-
-#     # שמירת פרטי החיוב
-#     registrant.setdefault("extra_payments", []).append({
-#         "amount": amount,
-#         "description": description,
-#         "timestamp": datetime.now().isoformat(),
-#         "docnum": response_data.get("docnum"),
-#         "confirmation_code": response_data.get("confirmation_code")
-#     })
-#     save_json(REGISTRATIONS_FILE, data)
-
-#     flash("החיוב בוצע בהצלחה!", "success")
-#     return redirect(url_for('view_registrations', gender=gender, course=course, group_type=group_type))
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)
